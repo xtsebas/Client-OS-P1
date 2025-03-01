@@ -62,6 +62,3 @@ El servidor puede responder con los siguientes errores:
 | 2 | Estado inválido |
 | 3 | Mensaje vacío |
 | 4 | Usuario destinatario desconectado |
-
-## 📄 Licencia
-Este proyecto está bajo la licencia **MIT**.
