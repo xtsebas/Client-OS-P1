@@ -268,6 +268,8 @@ Makefile: ../../Client-OS-P1.pro C:/Qt-framework/6.8.2/mingw_64/mkspecs/win32-g+
 		C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_uiplugin.pri \
 		C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_uitools.pri \
 		C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_uitools_private.pri \
+		C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_websockets.pri \
+		C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_websockets_private.pri \
 		C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_widgets.pri \
 		C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_widgets_private.pri \
 		C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_xml.pri \
@@ -305,6 +307,7 @@ Makefile: ../../Client-OS-P1.pro C:/Qt-framework/6.8.2/mingw_64/mkspecs/win32-g+
 		../../Client-OS-P1.pro \
 		C:/Qt-framework/6.8.2/mingw_64/lib/Qt6Widgets.prl \
 		C:/Qt-framework/6.8.2/mingw_64/lib/Qt6Gui.prl \
+		C:/Qt-framework/6.8.2/mingw_64/lib/Qt6WebSockets.prl \
 		C:/Qt-framework/6.8.2/mingw_64/lib/Qt6Network.prl \
 		C:/Qt-framework/6.8.2/mingw_64/lib/Qt6Core.prl \
 		C:/Qt-framework/6.8.2/mingw_64/lib/Qt6EntryPoint.prl \
@@ -508,6 +511,8 @@ C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_tools_private.pri:
 C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_uiplugin.pri:
 C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_uitools.pri:
 C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_uitools_private.pri:
+C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_websockets.pri:
+C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_websockets_private.pri:
 C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_widgets.pri:
 C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_widgets_private.pri:
 C:/Qt-framework/6.8.2/mingw_64/mkspecs/modules/qt_lib_xml.pri:
@@ -545,6 +550,7 @@ C:/Qt-framework/6.8.2/mingw_64/mkspecs/features/lex.prf:
 ../../Client-OS-P1.pro:
 C:/Qt-framework/6.8.2/mingw_64/lib/Qt6Widgets.prl:
 C:/Qt-framework/6.8.2/mingw_64/lib/Qt6Gui.prl:
+C:/Qt-framework/6.8.2/mingw_64/lib/Qt6WebSockets.prl:
 C:/Qt-framework/6.8.2/mingw_64/lib/Qt6Network.prl:
 C:/Qt-framework/6.8.2/mingw_64/lib/Qt6Core.prl:
 C:/Qt-framework/6.8.2/mingw_64/lib/Qt6EntryPoint.prl:

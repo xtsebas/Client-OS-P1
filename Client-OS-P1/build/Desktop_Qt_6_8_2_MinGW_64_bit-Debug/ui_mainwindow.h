@@ -24,6 +24,7 @@ class Ui_MainWindow
 public:
     QWidget *centralwidget;
     QTextEdit *textEdit;
+    QTextEdit *textEdit_2;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
@@ -38,6 +39,10 @@ public:
         textEdit->setObjectName("textEdit");
         textEdit->setEnabled(false);
         textEdit->setGeometry(QRect(180, 50, 501, 75));
+        textEdit_2 = new QTextEdit(centralwidget);
+        textEdit_2->setObjectName("textEdit_2");
+        textEdit_2->setEnabled(false);
+        textEdit_2->setGeometry(QRect(190, 230, 501, 75));
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName("menubar");

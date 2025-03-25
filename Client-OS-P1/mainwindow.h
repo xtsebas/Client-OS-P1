@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include "websocketclient.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -26,5 +27,8 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QNetworkAccessManager *networkManager;
+    WebSocketClient *wsClient;
+
+    QString getLocalIPAddress();
 };
 #endif // MAINWINDOW_H

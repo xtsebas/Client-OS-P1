@@ -1,5 +1,6 @@
 QT       += core gui
 QT       += network
+QT       += websockets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -11,10 +12,12 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    websocketclient.cpp
 
 HEADERS += \
-    mainwindow.h
+    mainwindow.h \
+    websocketclient.h
 
 FORMS += \
     mainwindow.ui
