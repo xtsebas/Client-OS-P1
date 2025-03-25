@@ -1,7 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
+#pragma once
 
 #include <QMainWindow>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -17,7 +20,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void handleNetworkReply(QNetworkReply* reply);
+
 private:
     Ui::MainWindow *ui;
+    QNetworkAccessManager *networkManager;
 };
 #endif // MAINWINDOW_H
