@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTextEdit" name="textEdit">
+   <widget class="QTextEdit" name="textEdit_2">
     <property name="enabled">
      <bool>false</bool>
     </property>
@@ -23,21 +23,31 @@
       <x>180</x>
       <y>50</y>
       <width>501</width>
-      <height>75</height>
+      <height>341</height>
      </rect>
     </property>
    </widget>
-   <widget class="QTextEdit" name="textEdit_2">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
+   <widget class="QLineEdit" name="messageInput">
     <property name="geometry">
      <rect>
-      <x>190</x>
-      <y>230</y>
-      <width>501</width>
-      <height>75</height>
+      <x>180</x>
+      <y>410</y>
+      <width>331</width>
+      <height>51</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="sendButton">
+    <property name="geometry">
+     <rect>
+      <x>540</x>
+      <y>430</y>
+      <width>80</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>PushButton</string>
     </property>
    </widget>
   </widget>

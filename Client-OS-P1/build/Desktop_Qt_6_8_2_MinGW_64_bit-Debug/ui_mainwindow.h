@@ -11,8 +11,10 @@
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QWidget>
@@ -23,8 +25,9 @@ class Ui_MainWindow
 {
 public:
     QWidget *centralwidget;
-    QTextEdit *textEdit;
     QTextEdit *textEdit_2;
+    QLineEdit *messageInput;
+    QPushButton *sendButton;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
@@ -35,14 +38,16 @@ public:
         MainWindow->resize(800, 600);
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName("centralwidget");
-        textEdit = new QTextEdit(centralwidget);
-        textEdit->setObjectName("textEdit");
-        textEdit->setEnabled(false);
-        textEdit->setGeometry(QRect(180, 50, 501, 75));
         textEdit_2 = new QTextEdit(centralwidget);
         textEdit_2->setObjectName("textEdit_2");
         textEdit_2->setEnabled(false);
-        textEdit_2->setGeometry(QRect(190, 230, 501, 75));
+        textEdit_2->setGeometry(QRect(180, 50, 501, 341));
+        messageInput = new QLineEdit(centralwidget);
+        messageInput->setObjectName("messageInput");
+        messageInput->setGeometry(QRect(180, 410, 331, 51));
+        sendButton = new QPushButton(centralwidget);
+        sendButton->setObjectName("sendButton");
+        sendButton->setGeometry(QRect(540, 430, 80, 25));
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName("menubar");
@@ -60,6 +65,7 @@ public:
     void retranslateUi(QMainWindow *MainWindow)
     {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
+        sendButton->setText(QCoreApplication::translate("MainWindow", "PushButton", nullptr));
     } // retranslateUi
 
 };
