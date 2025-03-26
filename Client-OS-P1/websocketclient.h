@@ -23,6 +23,7 @@ private slots:
 
 private:
     QWebSocket socket;
+    bool isConnected() const;
     QString username;
 };
 

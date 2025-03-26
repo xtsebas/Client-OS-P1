@@ -19,11 +19,15 @@ WebSocketClient::WebSocketClient(const QUrl& url, const QString& username, QObje
 
 void WebSocketClient::onConnected() {
     emit connected();
-    socket.sendTextMessage("¡Hola desde Qt!");
+    socket.sendTextMessage("¡Hola Usuario!");
 }
 
 void WebSocketClient::onTextMessageReceived(const QString& message) {
     emit messageReceived(message);
+}
+
+bool WebSocketClient::isConnected() const {
+    return socket.state() == QAbstractSocket::ConnectedState;
 }
 
 void WebSocketClient::onDisconnected() {
