@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QListWidgetItem>
 #include "websocketclient.h"
 
 QT_BEGIN_NAMESPACE
@@ -28,8 +29,11 @@ private:
     Ui::MainWindow *ui;
     QNetworkAccessManager *networkManager;
     WebSocketClient *wsClient;
+    QString username;
 
+    QString currentChat = "~";  // Chat actual (general por defecto)
     QString getLocalIPAddress();
+    void closeEvent(QCloseEvent *event) override;
 };
 
 #endif // MAINWINDOW_H

@@ -1,6 +1,7 @@
 #include "loginwindow.h"
 #include "ui_loginwindow.h"
 #include <QMessageBox>
+#include "mainwindow.h"
 
 loginwindow::loginwindow(QDialog *parent) :
     QDialog(parent),
@@ -20,14 +21,17 @@ QString loginwindow::getUsername() const
     return username;
 }
 
-void loginwindow::on_connectButton_clicked()
-{
-    QString input = ui->usernameInput->text().trimmed();
-    if (input.isEmpty()) {
-        QMessageBox::warning(this, "Error", "Por favor, ingrese un nombre de usuario válido.");
-        return;
+void loginwindow::on_connectButton_clicked() {
+    QString username = ui->usernameInput->text().trimmed();
+
+    if (username.isEmpty()) {
+        QMessageBox::warning(this, "Error", "El nombre de usuario no puede estar vacío.");
+        return;  // No permite iniciar sesión
     }
 
-    username = input;
-    accept(); // Cierra la ventana (porque QDialog no tiene exec/accept)
+    // Intentar conectar solo si el nombre no está vacío
+    MainWindow *mainWindow = new MainWindow(nullptr, username);
+    mainWindow->show();
+    this->close();
 }
+

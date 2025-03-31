@@ -11,7 +11,10 @@
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QComboBox>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QListWidget>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QPushButton>
@@ -28,6 +31,11 @@ public:
     QTextEdit *textEdit_2;
     QLineEdit *messageInput;
     QPushButton *sendButton;
+    QTextEdit *text;
+    QLabel *label;
+    QListWidget *userListWidget;
+    QComboBox *statusComboBox;
+    QPushButton *generalChatButton;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
@@ -48,6 +56,23 @@ public:
         sendButton = new QPushButton(centralwidget);
         sendButton->setObjectName("sendButton");
         sendButton->setGeometry(QRect(540, 430, 80, 25));
+        text = new QTextEdit(centralwidget);
+        text->setObjectName("text");
+        text->setGeometry(QRect(613, 525, 101, 20));
+        label = new QLabel(centralwidget);
+        label->setObjectName("label");
+        label->setGeometry(QRect(40, 50, 81, 31));
+        userListWidget = new QListWidget(centralwidget);
+        userListWidget->setObjectName("userListWidget");
+        userListWidget->setGeometry(QRect(10, 81, 171, 301));
+        statusComboBox = new QComboBox(centralwidget);
+        statusComboBox->addItem(QString());
+        statusComboBox->addItem(QString());
+        statusComboBox->setObjectName("statusComboBox");
+        statusComboBox->setGeometry(QRect(30, 420, 131, 41));
+        generalChatButton = new QPushButton(centralwidget);
+        generalChatButton->setObjectName("generalChatButton");
+        generalChatButton->setGeometry(QRect(650, 430, 80, 25));
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName("menubar");
@@ -65,7 +90,12 @@ public:
     void retranslateUi(QMainWindow *MainWindow)
     {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
-        sendButton->setText(QCoreApplication::translate("MainWindow", "PushButton", nullptr));
+        sendButton->setText(QCoreApplication::translate("MainWindow", "Send", nullptr));
+        label->setText(QCoreApplication::translate("MainWindow", "Usuarios", nullptr));
+        statusComboBox->setItemText(0, QCoreApplication::translate("MainWindow", "Activo", nullptr));
+        statusComboBox->setItemText(1, QCoreApplication::translate("MainWindow", "Ocupado", nullptr));
+
+        generalChatButton->setText(QCoreApplication::translate("MainWindow", "generalChat", nullptr));
     } // retranslateUi
 
 };
