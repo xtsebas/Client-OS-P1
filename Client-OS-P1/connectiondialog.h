@@ -88,6 +88,15 @@ public:
         return m_portEdit->value();
     }
 
+    // New methods to pre-populate the server fields
+    void setServerAddress(const QString &address) {
+        m_serverEdit->setText(address);
+    }
+
+    void setServerPort(int port) {
+        m_portEdit->setValue(port);
+    }
+
 private slots:
     void onConnectClicked() {
         // Validate input

@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QNetworkRequest>
 #include <QDebug>
+#include <QUrlQuery>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -105,20 +106,29 @@ void MainWindow::onConnectTriggered()
     }
 
     ConnectionDialog dialog(this);
+    // Pre-populate with known working server address and port
+    dialog.setServerAddress("18.224.60.241");
+    dialog.setServerPort(18080);
+
     if (dialog.exec() == QDialog::Accepted) {
         m_currentUsername = dialog.username();
 
-        // Create WebSocket connection URL
-        QString url = QString("ws://%1:%2?name=%3")
-                          .arg(dialog.server())
-                          .arg(dialog.port())
-                          .arg(m_currentUsername);
+        // Create WebSocket connection URL (with proper path and query handling)
+        QUrl url;
+        url.setScheme("ws");
+        url.setHost(dialog.server());
+        url.setPort(dialog.port());
+        url.setPath("/"); // Important: include the correct path
+
+        QUrlQuery query;
+        query.addQueryItem("name", m_currentUsername);
+        url.setQuery(query);
 
         // Update status bar
         ui->statusbar->showMessage("Connecting to server...");
 
         // Connect to server
-        m_webSocket->open(QUrl(url));
+        m_webSocket->open(url);
     }
 }
 
