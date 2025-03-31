@@ -10,13 +10,15 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    websocketclient.cpp
 
 HEADERS += \
     connectiondialog.h \
     mainwindow.h \
     messagebubble.h \
-    userchatitem.h
+    userchatitem.h \
+    websocketclient.h
 
 FORMS += \
     mainwindow.ui
