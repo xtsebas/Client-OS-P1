@@ -90,8 +90,8 @@
          </property>
          <property name="styleSheet">
           <string notr="true">QWidget#userProfileWidget {
-    background-color: #f0f2f5;
-    border-bottom: 1px solid #e0e0e0;
+    background-color: #ff9c08;
+    border-bottom: 1px solid #e88c00;
 }</string>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -111,11 +111,12 @@
             </property>
             <property name="styleSheet">
              <string notr="true">QLabel {
-    background-color: #128C7E;
+    background-color: #ffffff;
     border-radius: 30px;
-    color: white;
+    color: #ff9c08;
     font-size: 24px;
     font-weight: bold;
+    border: 2px solid #ffffff;
 }</string>
             </property>
             <property name="text">
@@ -134,6 +135,7 @@
                <string notr="true">QLabel {
     font-size: 16px;
     font-weight: bold;
+    color: #ffffff;
 }</string>
               </property>
               <property name="text">
@@ -151,14 +153,20 @@
               </property>
               <property name="styleSheet">
                <string notr="true">QComboBox {
-    border: 1px solid #e0e0e0;
+    border: 1px solid #e88c00;
     border-radius: 4px;
     padding: 4px;
-    background-color: white;
+    background-color: #ffffff;
+    color: #333333;
 }
 QComboBox::drop-down {
     border: none;
     width: 24px;
+}
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    selection-background-color: #ff9c08;
+    selection-color: white;
 }</string>
               </property>
               <item>
@@ -197,7 +205,12 @@ QComboBox::drop-down {
     border: none;
     border-bottom: 1px solid #e0e0e0;
     padding: 8px 16px;
-    background-color: #f0f2f5;
+    background-color: #f9f9f9;
+    color: #333333;
+}
+QLineEdit:focus {
+    background-color: #ffffff;
+    border-bottom: 1px solid #ff9c08;
 }</string>
          </property>
          <property name="placeholderText">
@@ -219,10 +232,13 @@ QTabBar::tab {
     background-color: #f0f2f5;
     padding: 8px 16px;
     border: none;
+    color: #666666;
 }
 QTabBar::tab:selected {
     background-color: #ffffff;
-    border-bottom: 3px solid #128C7E;
+    border-bottom: 3px solid #ff9c08;
+    color: #ff9c08;
+    font-weight: bold;
 }
 QTabWidget::tab-bar {
     alignment: center;
@@ -262,7 +278,11 @@ QListWidget::item {
     height: 70px;
 }
 QListWidget::item:selected {
-    background-color: #f0f2f5;
+    background-color: #fff3e0;
+    border-left: 3px solid #ff9c08;
+}
+QListWidget::item:hover {
+    background-color: #f9f9f9;
 }</string>
              </property>
             </widget>
@@ -303,7 +323,11 @@ QListWidget::item {
     height: 70px;
 }
 QListWidget::item:selected {
-    background-color: #f0f2f5;
+    background-color: #fff3e0;
+    border-left: 3px solid #ff9c08;
+}
+QListWidget::item:hover {
+    background-color: #f9f9f9;
 }</string>
              </property>
              <item>
@@ -325,7 +349,7 @@ QListWidget::item:selected {
      <widget class="QWidget" name="chatArea" native="true">
       <property name="styleSheet">
        <string notr="true">QWidget#chatArea {
-    background-color: #efeae2;
+    background-color: #f5f5f5;
 }</string>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -361,7 +385,7 @@ QListWidget::item:selected {
          </property>
          <property name="styleSheet">
           <string notr="true">QWidget#chatHeader {
-    background-color: #f0f2f5;
+    background-color: #ffffff;
     border-bottom: 1px solid #e0e0e0;
 }</string>
          </property>
@@ -372,6 +396,7 @@ QListWidget::item:selected {
              <string notr="true">QLabel {
     font-size: 16px;
     font-weight: bold;
+    color: #333333;
 }</string>
             </property>
             <property name="text">
@@ -411,8 +436,12 @@ QListWidget::item:selected {
              <string notr="true">QPushButton {
     border: none;
     background-color: transparent;
-    color: #666666;
-    font-size: 16px;
+    color: #ff9c08;
+    font-size: 18px;
+    font-weight: bold;
+}
+QPushButton:hover {
+    color: #e88c00;
 }</string>
             </property>
             <property name="text">
@@ -428,7 +457,8 @@ QListWidget::item:selected {
         <widget class="QTextBrowser" name="messageDisplay">
          <property name="styleSheet">
           <string notr="true">QTextBrowser {
-    background-color: #efeae2;
+    background-color: #f5f5f5;
+    color: #333333;
     border: none;
 }</string>
          </property>
@@ -451,7 +481,7 @@ QListWidget::item:selected {
          </property>
          <property name="styleSheet">
           <string notr="true">QWidget#messageInputArea {
-    background-color: #f0f2f5;
+    background-color: #ffffff;
     border-top: 1px solid #e0e0e0;
 }</string>
          </property>
@@ -469,7 +499,11 @@ QListWidget::item:selected {
     border: 1px solid #e0e0e0;
     border-radius: 20px;
     padding: 8px 16px;
-    background-color: white;
+    background-color: #ffffff;
+    color: #333333;
+}
+QTextEdit:focus {
+    border: 1px solid #ff9c08;
 }</string>
             </property>
             <property name="placeholderText">
@@ -493,13 +527,16 @@ QListWidget::item:selected {
             </property>
             <property name="styleSheet">
              <string notr="true">QPushButton {
-    background-color: #128C7E;
+    background-color: #ff9c08;
     color: white;
     border-radius: 20px;
     font-weight: bold;
 }
 QPushButton:hover {
-    background-color: #075E54;
+    background-color: #e88c00;
+}
+QPushButton:pressed {
+    background-color: #d67d00;
 }</string>
             </property>
             <property name="text">
@@ -551,7 +588,7 @@ QPushButton:hover {
          </property>
          <property name="styleSheet">
           <string notr="true">QLabel {
-    background-color: #128C7E;
+    background-color: #ff9c08;
     border-radius: 50px;
     color: white;
     font-size: 36px;
@@ -572,6 +609,7 @@ QPushButton:hover {
           <string notr="true">QLabel {
     font-size: 20px;
     font-weight: bold;
+    color: #333333;
 }</string>
          </property>
          <property name="text">
@@ -594,12 +632,30 @@ QPushButton:hover {
        </item>
        <item>
         <widget class="QGroupBox" name="userInfoDetails">
+         <property name="styleSheet">
+          <string notr="true">QGroupBox {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-top: 16px;
+    font-weight: bold;
+    color: #333333;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 8px;
+    background-color: #ffffff;
+}</string>
+         </property>
          <property name="title">
           <string>Details</string>
          </property>
          <layout class="QFormLayout" name="formLayout">
           <item row="0" column="0">
            <widget class="QLabel" name="ipLabel">
+            <property name="styleSheet">
+             <string notr="true">font-weight: bold; color: #666666;</string>
+            </property>
             <property name="text">
              <string>IP Address:</string>
             </property>
@@ -607,6 +663,9 @@ QPushButton:hover {
           </item>
           <item row="0" column="1">
            <widget class="QLabel" name="userInfoIP">
+            <property name="styleSheet">
+             <string notr="true">color: #333333;</string>
+            </property>
             <property name="text">
              <string>N/A</string>
             </property>
@@ -614,6 +673,9 @@ QPushButton:hover {
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="statusLabel">
+            <property name="styleSheet">
+             <string notr="true">font-weight: bold; color: #666666;</string>
+            </property>
             <property name="text">
              <string>Status:</string>
             </property>
@@ -621,6 +683,9 @@ QPushButton:hover {
           </item>
           <item row="1" column="1">
            <widget class="QLabel" name="userInfoStatusValue">
+            <property name="styleSheet">
+             <string notr="true">color: #333333;</string>
+            </property>
             <property name="text">
              <string>N/A</string>
             </property>
@@ -646,13 +711,18 @@ QPushButton:hover {
         <widget class="QPushButton" name="refreshInfoButton">
          <property name="styleSheet">
           <string notr="true">QPushButton {
-    background-color: #f0f2f5;
-    border: 1px solid #e0e0e0;
+    background-color: #ff9c08;
+    color: white;
+    border: none;
     border-radius: 4px;
     padding: 8px;
+    font-weight: bold;
 }
 QPushButton:hover {
-    background-color: #e0e0e0;
+    background-color: #e88c00;
+}
+QPushButton:pressed {
+    background-color: #d67d00;
 }</string>
          </property>
          <property name="text">
@@ -665,12 +735,14 @@ QPushButton:hover {
          <property name="styleSheet">
           <string notr="true">QPushButton {
     background-color: #f0f2f5;
+    color: #666666;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
     padding: 8px;
 }
 QPushButton:hover {
     background-color: #e0e0e0;
+    color: #333333;
 }</string>
          </property>
          <property name="text">
@@ -692,7 +764,35 @@ QPushButton:hover {
      <height>22</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QMenuBar {
+    background-color: #333333;
+    color: #ffffff;
+}
+QMenuBar::item {
+    background-color: transparent;
+    padding: 4px 8px;
+}
+QMenuBar::item:selected {
+    background-color: #ff9c08;
+    color: #ffffff;
+}</string>
+   </property>
    <widget class="QMenu" name="menuFile">
+    <property name="styleSheet">
+     <string notr="true">QMenu {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #e0e0e0;
+}
+QMenu::item {
+    padding: 6px 25px 6px 20px;
+}
+QMenu::item:selected {
+    background-color: #ff9c08;
+    color: #ffffff;
+}</string>
+    </property>
     <property name="title">
      <string>File</string>
     </property>
@@ -702,6 +802,20 @@ QPushButton:hover {
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
+    <property name="styleSheet">
+     <string notr="true">QMenu {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #e0e0e0;
+}
+QMenu::item {
+    padding: 6px 25px 6px 20px;
+}
+QMenu::item:selected {
+    background-color: #ff9c08;
+    color: #ffffff;
+}</string>
+    </property>
     <property name="title">
      <string>Help</string>
     </property>
@@ -714,8 +828,9 @@ QPushButton:hover {
   <widget class="QStatusBar" name="statusbar">
    <property name="styleSheet">
     <string notr="true">QStatusBar {
-    background-color: #f0f2f5;
-    border-top: 1px solid #e0e0e0;
+    background-color: #333333;
+    color: #ffffff;
+    border-top: 1px solid #222222;
 }</string>
    </property>
   </widget>
