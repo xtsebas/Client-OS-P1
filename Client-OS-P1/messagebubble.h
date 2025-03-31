@@ -1,0 +1,4 @@
+#ifndef MESSAGEBUBBLE_H
+#define MESSAGEBUBBLE_H
+
+#endif // MESSAGEBUBBLE_H

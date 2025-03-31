@@ -14,7 +14,10 @@ SOURCES += \
     mainwindow.cpp
 
 HEADERS += \
-    mainwindow.h
+    connectiondialog.h \
+    mainwindow.h \
+    messagebubble.h \
+    userchatitem.h
 
 FORMS += \
     mainwindow.ui
