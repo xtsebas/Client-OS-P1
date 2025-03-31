@@ -1,0 +1,70 @@
+# --- Qt/C++ ---
+*.o
+*.obj
+*.so
+*.a
+*.lib
+*.dll
+*.exe
+*.out
+
+# --- Qt Creator ---
+*.autosave
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.creator.*
+*.creator
+
+# --- CMake ---
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+CMakeLists.txt.user
+
+# --- QMake ---
+*.moc
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*.prl
+*.qmlc
+*.jsc
+
+# --- Qt Build folders ---
+build/
+build-*/
+
+# --- Debug/Release folders ---
+debug/
+release/
+
+# --- Logs and backups ---
+*.log
+*.bak
+*.swp
+*~
+
+# --- Generated files ---
+*.qmltypes
+*.rcc
+*.gch
+*.pch
+
+# --- macOS ---
+.DS_Store
+
+# --- Windows ---
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# --- VS Code ---
+.vscode/
+
+# --- Clangd ---
+.clangd
+.cache/
+
