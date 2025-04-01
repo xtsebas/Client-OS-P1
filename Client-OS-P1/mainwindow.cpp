@@ -229,9 +229,6 @@ void MainWindow::onWebSocketConnected()
 
     // Add system message to chat
     addSystemMessage("Connected to server. You can now chat with other users.");
-
-    // Get chat history for general chat
-    //getChatHistory("~");
 }
 
 void MainWindow::onWebSocketDisconnected()
@@ -306,18 +303,6 @@ void MainWindow::onSendButtonClicked()
 
         // Send the message using WebSocketClient with REAL username (NOT "Tú")
         m_webSocketClient->sendMessage(m_currentChat, message);
-
-        // Add the message to the chat display (for both private and general chat)
-        if (m_currentChat == "~") {
-            // For general chat, add it locally too with real username
-            //addChatMessage(m_currentUsername, message, MessageBubble::Sent);
-        } else {
-            // For private chat, display as "Tú" in UI only
-            //addChatMessage("Tú", message, MessageBubble::Sent);
-
-            // NO actualizar la lista de usuarios aquí para evitar el crash
-            // updateUserLastMessage(m_currentChat, "You: " + message);
-        }
 
         // Clear input field
         ui->messageInput->clear();
@@ -746,15 +731,21 @@ void MainWindow::addChatMessage(const QString &sender, const QString &message, M
     if (type == MessageBubble::System) {
         formattedText = QString("<div style='text-align:center; margin:5px; padding:5px; background-color:#e1f3fb; border-radius:5px; color:#555;'><b>System:</b> %1</div>").arg(message);
     } else if (type == MessageBubble::Sent) {
-        formattedText = QString("<div style='text-align:right; margin:5px;'><div style='display:inline-block; background-color:#dcf8c6; padding:8px; border-radius:10px; max-width:80%;'><b>%1:</b> %2<br><span style='font-size:10px; color:#888;'>%3</span></div></div>")
-            .arg(sender)
-            .arg(message)
-            .arg(timestamp.toString("hh:mm AP"));
+        formattedText = QString("<div style='text-align:right; margin:5px;'>"
+                                "<div style='display:inline-block; background-color:#dcf8c6; padding:8px; border-radius:10px; max-width:80%%; white-space: pre-wrap;'>"
+                                "<b>%1:</b> %2<br><span style='font-size:10px; color:#888;'>%3</span>"
+                                "</div></div>")
+                            .arg(sender)
+                            .arg(message.toHtmlEscaped())
+                            .arg(timestamp.toString("hh:mm AP"));
     } else { // Received
-        formattedText = QString("<div style='text-align:left; margin:5px;'><div style='display:inline-block; background-color:#ffffff; padding:8px; border-radius:10px; max-width:80%;'><b>%1:</b> %2<br><span style='font-size:10px; color:#888;'>%3</span></div></div>")
-            .arg(sender)
-            .arg(message)
-            .arg(timestamp.toString("hh:mm AP"));
+        formattedText = QString("<div style='text-align:left; margin:5px;'>"
+                                "<div style='display:inline-block; background-color:#ffffff; padding:8px; border-radius:10px; max-width:80%%; border: 1px solid #ddd; white-space: pre-wrap;'>"
+                                "<b>%1:</b> %2<br><span style='font-size:10px; color:#888;'>%3</span>"
+                                "</div></div>")
+                            .arg(sender)
+                            .arg(message.toHtmlEscaped())
+                            .arg(timestamp.toString("hh:mm AP"));
     }
     
     display->append(formattedText);

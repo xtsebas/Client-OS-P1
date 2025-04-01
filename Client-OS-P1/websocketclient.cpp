@@ -57,7 +57,7 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
             case 0x01: statusText = "Activo"; break;
             case 0x02: statusText = "Ocupado"; break;
             case 0x03: statusText = "Inactivo"; break;
-            default: statusText = "Desconocido";
+            default: statusText = "Desconectado";
             }
 
             users.append(user + " (" + statusText + ")");
