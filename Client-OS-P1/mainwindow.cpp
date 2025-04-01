@@ -580,7 +580,7 @@ void MainWindow::onInactivityTimeout()
 void MainWindow::onUserListReceived(const QStringList &users)
 {
     qDebug() << "Lista de usuarios recibida:" << users;
-    
+
     // Clear the user list
     ui->userListWidget->clear();
 
@@ -589,21 +589,28 @@ void MainWindow::onUserListReceived(const QStringList &users)
         // Parse status from the user string
         QString username = userWithStatus;
         QString statusText = "ACTIVO"; // Default status
-        
+
         // Extract username and status
         if (username.contains("(")) {
             int startPos = username.indexOf("(");
             int endPos = username.indexOf(")");
-            
+
             if (startPos != -1 && endPos != -1) {
-                statusText = username.mid(startPos + 1, endPos - startPos - 1);
+                statusText = username.mid(startPos + 1, endPos - startPos - 1).trimmed();
                 username = username.left(startPos).trimmed();
             }
         }
-        
-        // Skip the current user
-        if (username == m_currentUsername) continue;
 
+        // Skip if it's the current user
+        if (username == m_currentUsername)
+            continue;
+
+        // Skip if user is disconnected (case-insensitive)
+        QString upperStatus = statusText.toUpper();
+        if (upperStatus == "DESCONECTADO" || upperStatus == "DISCONNECTED" || upperStatus == "OFFLINE")
+            continue;
+
+        // Add to the UI
         QListWidgetItem *item = new QListWidgetItem(ui->userListWidget);
         item->setSizeHint(QSize(0, 70));
 
@@ -611,6 +618,7 @@ void MainWindow::onUserListReceived(const QStringList &users)
         ui->userListWidget->setItemWidget(item, chatItem);
     }
 }
+
 
 void MainWindow::onUserStatusReceived(quint8 status)
 {
