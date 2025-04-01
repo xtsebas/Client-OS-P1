@@ -122,6 +122,8 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         quint8 numMessages;
         in >> numMessages;
 
+        qDebug() << "Recibidos" << numMessages << "mensajes en el historial.";
+
         for (int i = 0; i < numMessages; ++i) {
             QString sender = getString8(in, offset);
             QString msg = getString8(in, offset);

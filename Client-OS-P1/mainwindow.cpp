@@ -231,7 +231,7 @@ void MainWindow::onWebSocketConnected()
     addSystemMessage("Connected to server. You can now chat with other users.");
 
     // Get chat history for general chat
-    getChatHistory("~");
+    //getChatHistory("~");
 }
 
 void MainWindow::onWebSocketDisconnected()
@@ -251,27 +251,25 @@ void MainWindow::onMessageReceived(const QString &sender, const QString &message
         m_inactivityTimer->start();
     }
 
-    // Check if this is for the current chat
-    if (m_currentChat == "~" || m_currentChat == sender || sender == "~") {
-        // Skip our own messages in general chat since we already added them
-        if (!(sender == m_currentUsername && m_currentChat == "~")) {
-            // Add message to chat display
+    // Mostrar mensajes SOLO si pertenecen al chat activo
+    if (m_currentChat == "~") {
+        // Chat general
+        if (sender == m_currentUsername) {
+            addChatMessage("Tú", message, MessageBubble::Sent);
+        } else if (sender != "~") {
             addChatMessage(sender, message, MessageBubble::Received);
         }
-    } else {
-        // This is a message for a chat we're not currently viewing
-        // We could add a notification or highlight the user in the list
-        qDebug() << "Mensaje para chat no activo:" << sender;
     }
-
-    // Update user's last message in the list
-    if (sender != "~" && sender != m_currentUsername) {
-        updateUserLastMessage(sender, message);
+    else if (m_currentChat == sender) {
+        // Mensaje recibido de otro usuario en chat privado
+        addChatMessage(sender, message, MessageBubble::Received);
     }
-
-    // If the user info is showing for this sender, we may want to refresh it
-    if (ui->userInfoSidebar->isVisible() && ui->userInfoName->text() == sender) {
-        // Here you would typically request more user info
+    else if (sender == m_currentUsername && m_currentChat != "~") {
+        // Mensaje enviado por mí en chat privado
+        addChatMessage("Tú", message, MessageBubble::Sent);
+    }
+    else {
+        qDebug() << "Mensaje ignorado, no pertenece al chat actual.";
     }
 }
 
@@ -312,10 +310,10 @@ void MainWindow::onSendButtonClicked()
         // Add the message to the chat display (for both private and general chat)
         if (m_currentChat == "~") {
             // For general chat, add it locally too with real username
-            addChatMessage(m_currentUsername, message, MessageBubble::Sent);
+            //addChatMessage(m_currentUsername, message, MessageBubble::Sent);
         } else {
             // For private chat, display as "Tú" in UI only
-            addChatMessage("Tú", message, MessageBubble::Sent);
+            //addChatMessage("Tú", message, MessageBubble::Sent);
 
             // NO actualizar la lista de usuarios aquí para evitar el crash
             // updateUserLastMessage(m_currentChat, "You: " + message);
@@ -360,7 +358,10 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
     }
 
     QString username = chatItem->username();
-    qDebug() << "Usuario seleccionado para chat privado:" << username;
+    if (m_currentChat == username) {
+        qDebug() << "Ya estamos en el chat con" << username;
+        return;
+    }
 
     // Extract the username without status
     if (username.contains("(")) {
@@ -381,6 +382,9 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
         qDebug() << "Ya estamos en el chat con" << username;
         return;
     }
+
+    // Bloquear señales temporalmente
+    ui->userListWidget->blockSignals(true);
 
     // Set the current chat
     m_currentChat = username;
@@ -404,14 +408,6 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
         qDebug() << "Advertencia: No se puede obtener historial, no conectado";
     }
 
-    // Desactivar temporalmente la señal clicked para evitar ciclos
-    ui->userListWidget->blockSignals(true);
-
-    // IMPORTANTE: Evitar mostrar el panel de información automáticamente
-    // ya que esto puede causar el crash
-    // Si se desea mostrar, debe hacerse de manera segura
-    // onInfoButtonClicked();
-
     // Reactivar señales
     ui->userListWidget->blockSignals(false);
 }
@@ -420,7 +416,10 @@ void MainWindow::onBroadcastItemClicked(QListWidgetItem *item)
     if (!item) return;
 
     qDebug() << "Cambiando a chat general";
-    
+
+    // Bloquear señales para evitar cambios múltiples
+    ui->broadcastListWidget->blockSignals(true);
+
     // Set the current chat to general
     m_currentChat = "~";
 
@@ -440,6 +439,9 @@ void MainWindow::onBroadcastItemClicked(QListWidgetItem *item)
     if (m_connected && m_webSocketClient) {
         getChatHistory("~");
     }
+
+    // Desbloquear señales
+    ui->broadcastListWidget->blockSignals(false);
 
     // Hide user info sidebar if visible
     ui->userInfoSidebar->hide();
