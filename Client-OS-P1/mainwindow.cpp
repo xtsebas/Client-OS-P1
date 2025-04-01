@@ -253,7 +253,9 @@ void MainWindow::onMessageReceived(const QString &sender, const QString &message
         // Chat general
         if (sender == m_currentUsername) {
             addChatMessage("Tú", message, MessageBubble::Sent);
-        } else if (sender != "~") {
+        } else if (sender == "~") {
+            addSystemMessage(message);
+        } else {
             addChatMessage(sender, message, MessageBubble::Received);
         }
     }
