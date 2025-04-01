@@ -15,10 +15,14 @@
 #include <QScrollBar>
 #include <QShortcut>
 #include <QAbstractSocket>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QCloseEvent>
 
 #include "connectiondialog.h"
 #include "userchatitem.h"
 #include "messagebubble.h"
+#include "websocketclient.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -35,47 +39,69 @@ public:
     ~MainWindow();
 
 private slots:
+    // Connection handling
     void onConnectTriggered();
     void onDisconnectTriggered();
+    
+    // WebSocket events
     void onWebSocketConnected();
     void onWebSocketDisconnected();
-    void onTextMessageReceived(const QString &message);
-    void onWebSocketError(QAbstractSocket::SocketError error);
+    
+    // Message handling
+    void onMessageReceived(const QString &sender, const QString &message);
     void onSendButtonClicked();
     void onMessageInputChanged();
+    
+    // User interaction
     void onUserItemClicked(QListWidgetItem *item);
     void onBroadcastItemClicked(QListWidgetItem *item);
     void onStatusChanged(int index);
+    
+    // Info panel
     void onInfoButtonClicked();
     void onCloseInfoButtonClicked();
     void onRefreshInfoButtonClicked();
+    
+    // Menu actions
     void onAboutTriggered();
     void onHelpTriggered();
+    
+    // User list and status
+    void onUserListReceived(const QStringList &users);
+    void onUserStatusReceived(quint8 status);
+    
+    // Timer events
     void onInactivityTimeout();
+    
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private:
+    // Core UI setup
     void setupInitialUI();
     void updateUserAvatar();
-    void requestUserList();
-    void requestUserInfo(const QString &username);
-    void handleUserListResponse(const QJsonObject &obj);
-    void handleUserInfoResponse(const QJsonObject &obj);
-    void handleStatusUpdateResponse(const QJsonObject &obj);
-    void handleChatMessage(const QJsonObject &obj);
-    void handleBroadcastMessage(const QJsonObject &obj);
-    void handleErrorMessage(const QJsonObject &obj);
+    
+    // Connection and messaging
+    void getChatHistory(const QString &chatName);
+    QString getLocalIPAddress();
+    
+    // Chat message handling
     void addChatMessage(const QString &sender, const QString &message, MessageBubble::MessageType type);
     void addSystemMessage(const QString &message);
     void updateUserLastMessage(const QString &username, const QString &message);
+    
+    // Chat history
     void loadDirectChatHistory(const QString &username);
     void loadBroadcastChatHistory();
 
     Ui::MainWindow *ui;
-    QWebSocket *m_webSocket;
+    WebSocketClient *m_webSocketClient;
     bool m_connected;
     QString m_currentUsername;
+    QString m_currentChat;
     QString m_currentStatus;
     QTimer *m_inactivityTimer;
+    QNetworkAccessManager *m_networkManager;
 };
 
 #endif // MAINWINDOW_H
