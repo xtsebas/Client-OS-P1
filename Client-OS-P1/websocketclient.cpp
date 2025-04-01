@@ -185,15 +185,47 @@ void WebSocketClient::handleError(QDataStream& in) {
 }
 
 void WebSocketClient::sendMessage(const QString& recipient, const QString& message) {
-    if (socket.isValid()) {
+    qDebug() << "WebSocketClient: enviando mensaje a" << recipient << "- Mensaje:" << message;
+
+    // Validación básica
+    if (recipient.isEmpty()) {
+        qDebug() << "Error en WebSocketClient::sendMessage: destinatario vacío";
+        return;
+    }
+
+    if (message.isEmpty()) {
+        qDebug() << "Error en WebSocketClient::sendMessage: mensaje vacío";
+        return;
+    }
+
+    if (!socket.isValid()) {
+        qDebug() << "Error en WebSocketClient::sendMessage: socket no válido";
+        return;
+    }
+
+    try {
+        // Construcción del paquete binario según el protocolo
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
+
+        // 0x04 es el código de operación para enviar mensaje
         out << quint8(0x04);
+
+        // Añadir tamaño y datos del destinatario
         out << quint8(recipient.size());
         out.writeRawData(recipient.toUtf8().data(), recipient.size());
+
+        // Añadir tamaño y datos del mensaje
         out << quint8(message.size());
         out.writeRawData(message.toUtf8().data(), message.size());
+
+        // Enviar el mensaje binario
+        qDebug() << "WebSocketClient: enviando paquete de" << payload.size() << "bytes";
         socket.sendBinaryMessage(payload);
+    } catch (const std::exception& e) {
+        qDebug() << "Excepción en WebSocketClient::sendMessage:" << e.what();
+    } catch (...) {
+        qDebug() << "Excepción desconocida en WebSocketClient::sendMessage";
     }
 }
 

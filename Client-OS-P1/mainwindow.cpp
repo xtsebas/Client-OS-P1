@@ -104,7 +104,7 @@ void MainWindow::onConnectTriggered()
 
     ConnectionDialog dialog(this);
     // Pre-populate with known working server address and port
-    dialog.setServerAddress("localhost");
+    dialog.setServerAddress("18.224.60.241");
     dialog.setServerPort(18080);
 
     if (dialog.exec() == QDialog::Accepted) {
@@ -290,29 +290,51 @@ void MainWindow::onSendButtonClicked()
 
     qDebug() << "Intentando enviar mensaje a:" << m_currentChat << "- Mensaje:" << message;
 
-    // Reset inactivity timer on sending a message
-    if (m_inactivityTimer->isActive()) {
-        m_inactivityTimer->start();
+    // Validar el destinatario
+    if (m_currentChat.isEmpty()) {
+        qDebug() << "Error: destinatario vacío";
+        QMessageBox::warning(this, "Error", "No se ha seleccionado un destinatario válido.");
+        return;
     }
 
-    // Send the message using WebSocketClient
-    m_webSocketClient->sendMessage(m_currentChat, message);
+    try {
+        // Reset inactivity timer on sending a message
+        if (m_inactivityTimer->isActive()) {
+            m_inactivityTimer->start();
+        }
 
-    // Add the message to the chat display (for both private and general chat)
-    // This ensures we see our own messages in general chat too
-    if (m_currentChat == "~") {
-        // For general chat, add it locally too
-        addChatMessage(m_currentUsername, message, MessageBubble::Sent);
-    } else {
-        // For private chat
-        addChatMessage(m_currentUsername, message, MessageBubble::Sent);
-        
-        // Update last message in the user list
-        updateUserLastMessage(m_currentChat, "You: " + message);
+        // Asegurarse de que no se actualice la UI durante el envío para evitar posibles crashes
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+
+        // Send the message using WebSocketClient with REAL username (NOT "Tú")
+        m_webSocketClient->sendMessage(m_currentChat, message);
+
+        // Add the message to the chat display (for both private and general chat)
+        if (m_currentChat == "~") {
+            // For general chat, add it locally too with real username
+            addChatMessage(m_currentUsername, message, MessageBubble::Sent);
+        } else {
+            // For private chat, display as "Tú" in UI only
+            addChatMessage("Tú", message, MessageBubble::Sent);
+
+            // NO actualizar la lista de usuarios aquí para evitar el crash
+            // updateUserLastMessage(m_currentChat, "You: " + message);
+        }
+
+        // Clear input field
+        ui->messageInput->clear();
+
+        // Restaurar cursor
+        QApplication::restoreOverrideCursor();
+    } catch (const std::exception& e) {
+        QApplication::restoreOverrideCursor(); // asegurarse de restaurar el cursor
+        qDebug() << "Excepción al enviar mensaje:" << e.what();
+        QMessageBox::critical(this, "Error", "Error al enviar mensaje: " + QString(e.what()));
+    } catch (...) {
+        QApplication::restoreOverrideCursor(); // asegurarse de restaurar el cursor
+        qDebug() << "Error desconocido al enviar mensaje";
+        QMessageBox::critical(this, "Error", "Error desconocido al enviar mensaje.");
     }
-
-    // Clear input field
-    ui->messageInput->clear();
 }
 
 void MainWindow::onMessageInputChanged()
@@ -325,17 +347,39 @@ void MainWindow::onMessageInputChanged()
 
 void MainWindow::onUserItemClicked(QListWidgetItem *item)
 {
-    if (!item) return;
+    if (!item) {
+        qDebug() << "Error: item nulo seleccionado";
+        return;
+    }
 
     // Get the username from the item
     UserChatItem *chatItem = qobject_cast<UserChatItem*>(ui->userListWidget->itemWidget(item));
-    if (!chatItem) return;
+    if (!chatItem) {
+        qDebug() << "Error: no se pudo obtener UserChatItem del item";
+        return;
+    }
 
     QString username = chatItem->username();
-    
+    qDebug() << "Usuario seleccionado para chat privado:" << username;
+
     // Extract the username without status
     if (username.contains("(")) {
-        username = username.left(username.indexOf("(")).trimmed();
+        int startPos = username.indexOf("(");
+        username = username.left(startPos).trimmed();
+        qDebug() << "Nombre de usuario extraído sin estado:" << username;
+    }
+
+    // Validar que el username no esté vacío
+    if (username.isEmpty()) {
+        qDebug() << "Error: nombre de usuario vacío";
+        QMessageBox::warning(this, "Error", "No se pudo determinar el usuario seleccionado.");
+        return;
+    }
+
+    // No cambiar de chat si ya estamos en ese chat
+    if (m_currentChat == username) {
+        qDebug() << "Ya estamos en el chat con" << username;
+        return;
     }
 
     // Set the current chat
@@ -349,17 +393,28 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
 
     // Clear the chat area and load messages for this user
     ui->messageDisplay->clear();
-    
+
     // Add system message indicating private chat
-    addSystemMessage("Private chat with " + username);
-    
-    // Get chat history
-    getChatHistory(username);
+    addSystemMessage("Chat privado con " + username);
 
-    // Show the user info sidebar
-    onInfoButtonClicked();
+    // Get chat history if connected
+    if (m_connected && m_webSocketClient) {
+        getChatHistory(username);
+    } else {
+        qDebug() << "Advertencia: No se puede obtener historial, no conectado";
+    }
+
+    // Desactivar temporalmente la señal clicked para evitar ciclos
+    ui->userListWidget->blockSignals(true);
+
+    // IMPORTANTE: Evitar mostrar el panel de información automáticamente
+    // ya que esto puede causar el crash
+    // Si se desea mostrar, debe hacerse de manera segura
+    // onInfoButtonClicked();
+
+    // Reactivar señales
+    ui->userListWidget->blockSignals(false);
 }
-
 void MainWindow::onBroadcastItemClicked(QListWidgetItem *item)
 {
     if (!item) return;
@@ -634,11 +689,25 @@ void MainWindow::getChatHistory(const QString &chatName)
         return;
     }
     
+    // Validar el nombre del chat
+    if (chatName.isEmpty()) {
+        qDebug() << "Error: nombre de chat vacío";
+        return;
+    }
+    
     // Clear current messages
     ui->messageDisplay->clear();
     
-    // Request history from the WebSocketClient
-    m_webSocketClient->getChatHistory(chatName);
+    try {
+        // Request history from the WebSocketClient
+        m_webSocketClient->getChatHistory(chatName);
+    } catch (const std::exception& e) {
+        qDebug() << "Excepción al obtener historial:" << e.what();
+        addSystemMessage("Error al obtener historial: " + QString(e.what()));
+    } catch (...) {
+        qDebug() << "Error desconocido al obtener historial";
+        addSystemMessage("Error desconocido al obtener historial del chat.");
+    }
 }
 
 QString MainWindow::getLocalIPAddress() {
