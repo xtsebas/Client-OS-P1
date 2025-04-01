@@ -446,24 +446,31 @@ void MainWindow::onStatusChanged(int index)
     }
 
     quint8 newStatus;
+    QString newStatusText;
     switch (index) {
-    case 0: newStatus = 0x01; m_currentStatus = "ACTIVO"; break;
-    case 1: newStatus = 0x02; m_currentStatus = "OCUPADO"; break;
-    case 2: newStatus = 0x03; m_currentStatus = "INACTIVO"; break;
-    default: newStatus = 0x01; m_currentStatus = "ACTIVO"; break;
+        case 0: newStatus = 0x01; newStatusText = "ACTIVO"; break;
+        case 1: newStatus = 0x02; newStatusText = "OCUPADO"; break;
+        case 2: newStatus = 0x03; newStatusText = "INACTIVO"; break;
+        default: newStatus = 0x01; newStatusText = "ACTIVO"; break;
     }
 
-    qDebug() << "Intentando cambiar el estado a:" << m_currentStatus << "(" << newStatus << ")";
+    // Se elimina la verificación que evitaba enviar el cambio si el estado era igual al actual.
+    // if (newStatusText == m_currentStatus) {
+    //     qDebug() << "El estado ya es" << m_currentStatus << "; no se envía cambio.";
+    //     return;
+    // }
     
-    // Send status update via WebSocketClient
+    // Enviar la solicitud de cambio de estado siempre, permitiendo transiciones entre cualquier estado.
+    qDebug() << "Intentando cambiar el estado a:" << newStatusText << "(" << newStatus << ")";
     m_webSocketClient->changeUserStatus(newStatus);
-
-    // Update status bar
-    ui->statusbar->showMessage("Status changed to " + m_currentStatus);
+    ui->statusbar->showMessage("Status changed to " + newStatusText);
     
-    // Set current avatar status
-    updateUserAvatar();
+    // Opcional: actualizar la variable interna (o esperar a la respuesta del servidor para sincronizar)
+    // m_currentStatus = newStatusText;
 }
+
+
+
 
 void MainWindow::onInfoButtonClicked()
 {
