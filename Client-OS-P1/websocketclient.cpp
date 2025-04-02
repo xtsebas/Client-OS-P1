@@ -34,7 +34,6 @@ void WebSocketClient::onConnected() {
     socket.sendBinaryMessage(userInfoPayload);
 }
 
-
 void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
     QDataStream in(message);
     quint8 opcode;
@@ -63,7 +62,6 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
             users.append(user + " (" + statusText + ")");
         }
 
-        // Emitir señal para actualizar la lista de usuarios en la UI
         emit userListReceived(users);
         break;
     }
@@ -81,13 +79,11 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         size_t offset = 1;
         QString username = getString8(in, offset);
 
-        // Mostrar notificación de usuario conectado
         emit messageReceived("~", "🔔 " + username + " se ha conectado.");
 
-        // Solicitar lista actualizada de usuarios
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x01);  // 0x01 → Solicitar lista de usuarios
+        out << quint8(0x01);
         socket.sendBinaryMessage(payload);
 
         break;
@@ -96,7 +92,6 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
     case 0x54: {
         size_t offset = 1;
         QString username = getString8(in, offset);
-
         quint8 newStatus;
         in >> newStatus;
 
@@ -110,20 +105,20 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
             emit messageReceived("~", "💤 " + username + " está inactivo.");
         }
 
-        // Pedir actualización de lista
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x01);  // Solicitar lista actualizada
+        out << quint8(0x01);
         socket.sendBinaryMessage(payload);
 
         break;
     }
 
-    case 0x55: { // Nuevo mensaje recibido
+    case 0x55: { // Nuevo mensaje recibido (mensaje normal)
         size_t offset = 1;
         QString sender = getString8(in, offset);
         QString msg = getString8(in, offset);
-        emit messageReceived(sender, msg);
+        bool isHistory = false;
+        emit messageReceivedWithFlag(sender, msg, isHistory);
         break;
     }
 
@@ -134,16 +129,14 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
     
         qDebug() << "WebSocketClient: Recibidos" << numMessages << "mensajes en el historial.";
     
-        // Limpiar mensajes actuales antes de mostrar el historial
-        emit clearMessages();  // Necesitarás añadir esta señal
+        emit clearMessages();
     
         for (int i = 0; i < numMessages; ++i) {
             QString sender = getString8(in, offset);
             QString msg = getString8(in, offset);
-            
+            bool isHistory = true;
             qDebug() << "WebSocketClient: Historial #" << i << "- De:" << sender << "- Mensaje:" << msg.left(30);
-            
-            emit messageReceived(sender, msg);
+            emit messageReceivedWithFlag(sender, msg, isHistory);
         }
         break;
     }
@@ -152,19 +145,15 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         size_t offset = 1;
         QString username = getString8(in, offset);
 
-        // Mostrar notificación de desconexión
         emit messageReceived("~", "🚪 " + username + " se ha desconectado.");
 
-        // Solicitar lista actualizada de usuarios después de desconexión
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x01);  // 0x01 → Solicitar lista de usuarios
+        out << quint8(0x01);
         socket.sendBinaryMessage(payload);
 
         break;
     }
-
-
 
     case 0x50: // Error recibido
         handleError(in);
@@ -183,7 +172,7 @@ void WebSocketClient::handleError(QDataStream& in) {
     switch (errorCode) {
     case 0x01:
         errorMessage = "El usuario ya está conectado. Por favor, elige otro nombre.";
-        emit connectionRejected();  // Nueva señal para notificar rechazo
+        emit connectionRejected();
         break;
     case 0x02:
         errorMessage = "Estado inválido.";
@@ -204,7 +193,6 @@ void WebSocketClient::handleError(QDataStream& in) {
 void WebSocketClient::sendMessage(const QString& recipient, const QString& message) {
     qDebug() << "DEBUG - WebSocketClient::sendMessage: Enviando a" << recipient << "- Mensaje:" << message.left(30);
 
-    // Validación básica
     if (recipient.isEmpty()) {
         qDebug() << "Error en WebSocketClient::sendMessage: destinatario vacío";
         return;
@@ -221,25 +209,17 @@ void WebSocketClient::sendMessage(const QString& recipient, const QString& messa
     }
 
     try {
-        // Construcción del paquete binario según el protocolo
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
 
-        // 0x04 es el código de operación para enviar mensaje
         out << quint8(0x04);
-
-        // Añadir tamaño y datos del destinatario
         out << quint8(recipient.size());
         out.writeRawData(recipient.toUtf8().data(), recipient.size());
-
-        // Añadir tamaño y datos del mensaje
         out << quint8(message.size());
         out.writeRawData(message.toUtf8().data(), message.size());
 
-        // Enviar el mensaje binario
         qDebug() << "DEBUG - WebSocketClient: enviando paquete de" << payload.size() << "bytes";
         
-        // Convertir el payload a hexadecimal para depuración
         QString hexDump;
         for (char byte : payload) {
             hexDump += QString("%1 ").arg((quint8)byte, 2, 16, QLatin1Char('0'));
@@ -258,13 +238,12 @@ void WebSocketClient::getChatHistory(const QString& chatName) {
     if (socket.isValid()) {
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x05);  // 0x05 → Solicitar historial
+        out << quint8(0x05);
         out << quint8(chatName.size());
         out.writeRawData(chatName.toUtf8().data(), chatName.size());
         socket.sendBinaryMessage(payload);
     }
 }
-
 
 void WebSocketClient::changeUserStatus(quint8 newStatus) {
     if (socket.isValid()) {
@@ -272,7 +251,7 @@ void WebSocketClient::changeUserStatus(quint8 newStatus) {
         QDataStream out(&payload, QIODevice::WriteOnly);
         out << quint8(0x03);
 
-        out <<quint8(username.size());
+        out << quint8(username.size());
         out.writeRawData(username.toUtf8().data(), username.size());
 
         out << newStatus;
@@ -297,15 +276,13 @@ void WebSocketClient::onDisconnected() {
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
 
-        // 0x06 → Código para desconectar
         out << quint8(0x06);
         socket.sendBinaryMessage(payload);
     }
 
-    socket.close();  // Cierra el socket de forma segura
+    socket.close();
     emit disconnected();
 }
-
 
 QString WebSocketClient::getString8(QDataStream &in, size_t &offset) {
     quint8 length;

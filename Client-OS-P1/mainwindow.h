@@ -52,6 +52,8 @@ private slots:
     
     // Message handling
     void onMessageReceived(const QString &sender, const QString &message);
+    // NUEVO SLOT para procesar mensajes con bandera de historial
+    void onMessageReceivedWithFlag(const QString &sender, const QString &message, bool isHistory);
     void onSendButtonClicked();
     void onMessageInputChanged();
     
@@ -107,6 +109,9 @@ private:
     QString m_currentStatus;
     QTimer *m_inactivityTimer;
     QNetworkAccessManager *m_networkManager;
+
+    // NUEVA VARIABLE: Almacena para qué chat se está solicitando el historial
+    QString m_requestedHistoryChat;
 };
 
 #endif // MAINWINDOW_H

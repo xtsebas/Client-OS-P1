@@ -16,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_currentStatus("ACTIVO")
     , m_inactivityTimer(new QTimer(this))
     , m_networkManager(new QNetworkAccessManager(this))
+    , m_requestedHistoryChat("~") // Inicializar con valor predeterminado
 {
     ui->setupUi(this);
     ui->userAvatar->setCursor(Qt::PointingHandCursor);
@@ -39,6 +40,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->userListWidget, &QListWidget::itemClicked, this, &MainWindow::onUserItemClicked);
     connect(ui->broadcastListWidget, &QListWidget::itemClicked, this, &MainWindow::onBroadcastItemClicked);
+    
+    // Conexión para limpiar mensajes solicitada por el WebSocketClient
     connect(m_webSocketClient, &WebSocketClient::clearMessages, this, [=]() {
         ui->messageDisplay->clear();
         qDebug() << "MainWindow: Mensajes limpiados por solicitud del WebSocketClient";
@@ -57,7 +60,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Set up the inactivity timer
     connect(m_inactivityTimer, &QTimer::timeout, this, &MainWindow::onInactivityTimeout);
-    m_inactivityTimer->setInterval(300000); // 5 minutes by default
+    m_inactivityTimer->setInterval(300000); // 5 minutes por defecto
 
     // Initial UI setup
     setupInitialUI();
@@ -132,7 +135,12 @@ void MainWindow::onConnectTriggered()
         // Connect WebSocketClient signals to MainWindow slots
         connect(m_webSocketClient, &WebSocketClient::connected, this, &MainWindow::onWebSocketConnected);
         connect(m_webSocketClient, &WebSocketClient::disconnected, this, &MainWindow::onWebSocketDisconnected);
-        connect(m_webSocketClient, &WebSocketClient::messageReceived, this, &MainWindow::onMessageReceived);
+        // Nueva conexión para la señal con bandera
+        connect(m_webSocketClient, &WebSocketClient::messageReceivedWithFlag, 
+                this, &MainWindow::onMessageReceivedWithFlag);
+        // Mantener la conexión existente para compatibilidad
+        connect(m_webSocketClient, &WebSocketClient::messageReceived, 
+                this, &MainWindow::onMessageReceived);
         connect(m_webSocketClient, &WebSocketClient::userListReceived, this, &MainWindow::onUserListReceived);
         connect(m_webSocketClient, &WebSocketClient::userStatusReceived, this, &MainWindow::onUserStatusReceived);
         connect(m_webSocketClient, &WebSocketClient::connectionRejected, this, [=]() {
@@ -249,10 +257,12 @@ void MainWindow::onWebSocketDisconnected()
     }
 }
 
-void MainWindow::onMessageReceived(const QString &sender, const QString &message)
+// NUEVO MÉTODO: Procesa el mensaje con bandera que indica si es historial o no
+void MainWindow::onMessageReceivedWithFlag(const QString &sender, const QString &message, bool isHistory)
 {
-    qDebug() << "DEBUG - onMessageReceived: Emisor=" << sender << "Mensaje=" << message.left(30);
-    qDebug() << "DEBUG - Estado: Usuario actual=" << m_currentUsername << "Chat actual=" << m_currentChat;
+    qDebug() << "DEBUG - onMessageReceivedWithFlag: Emisor=" << sender 
+             << "Mensaje=" << message.left(30) 
+             << "Es Historial=" << isHistory;
     
     // Restablecer el temporizador de inactividad
     if (m_inactivityTimer->isActive()) {
@@ -270,21 +280,71 @@ void MainWindow::onMessageReceived(const QString &sender, const QString &message
     else if (sender == m_currentUsername) {
         qDebug() << "DEBUG - Tipo identificado: MENSAJE ENVIADO POR MÍ";
         
-        // IMPORTANTE: No procesamos mensajes propios que vienen del servidor,
-        // ya que los mostramos inmediatamente cuando los enviamos en onSendButtonClicked
-        // Esto evita la duplicación
-        return;
+        // Si es un mensaje del historial
+        if (isHistory) {
+            qDebug() << "DEBUG - Procesando mensaje propio del historial";
+            qDebug() << "DEBUG - Chat actual:" << m_currentChat 
+                     << "- Chat solicitado:" << m_requestedHistoryChat;
+            
+            // Para historial de chat general
+            if (m_requestedHistoryChat == "~" && m_currentChat == "~") {
+                addChatMessage("Tú", message, MessageBubble::Sent);
+                return;
+            }
+            
+            // Para historial de chat directo: mostramos nuestros mensajes del historial
+            // solo cuando estamos en el chat correcto
+            if (m_requestedHistoryChat != "~" && m_currentChat == m_requestedHistoryChat) {
+                addChatMessage("Tú", message, MessageBubble::Sent);
+                return;
+            }
+            
+            // Si no corresponde al chat actual, se ignora
+            qDebug() << "DEBUG - Ignorando mensaje, no pertenece al chat actual";
+            return;
+        } 
+        else {
+            // No es mensaje del historial, se ignora para evitar duplicados
+            return;
+        }
     }
     
     // CASO 3: Mensaje recibido de otro usuario
     else {
         qDebug() << "DEBUG - Tipo identificado: MENSAJE RECIBIDO DE OTRO";
         
-        // Mostrar solo si es el chat general o privado con este remitente
-        if (m_currentChat == "~" || m_currentChat == sender) {
-            addChatMessage(sender, message, MessageBubble::Received);
+        if (isHistory) {
+            // Para historial de chat general
+            if (m_requestedHistoryChat == "~" && m_currentChat == "~") {
+                addChatMessage(sender, message, MessageBubble::Received);
+                return;
+            }
+            
+            // Para historial de chat directo: mostramos solo si el remitente coincide con el chat solicitado
+            if (m_requestedHistoryChat != "~" && sender == m_requestedHistoryChat && 
+                m_currentChat == m_requestedHistoryChat) {
+                addChatMessage(sender, message, MessageBubble::Received);
+                return;
+            }
+            
+            // Si no coincide, se ignora
+            qDebug() << "DEBUG - Ignorando mensaje recibido, no pertenece al chat solicitado";
+            return;
+        }
+        // Mensaje normal (no historial)
+        else {
+            // Mostrar el mensaje solo si se trata del chat general o privado con este remitente
+            if (m_currentChat == "~" || m_currentChat == sender) {
+                addChatMessage(sender, message, MessageBubble::Received);
+            }
         }
     }
+}
+
+// Método existente: delega al nuevo método con bandera = false
+void MainWindow::onMessageReceived(const QString &sender, const QString &message)
+{
+    onMessageReceivedWithFlag(sender, message, false);
 }
 
 void MainWindow::onSendButtonClicked()
@@ -330,11 +390,11 @@ void MainWindow::onSendButtonClicked()
         // Restaurar cursor
         QApplication::restoreOverrideCursor();
     } catch (const std::exception& e) {
-        QApplication::restoreOverrideCursor(); // asegurarse de restaurar el cursor
+        QApplication::restoreOverrideCursor();
         qDebug() << "Excepción al enviar mensaje:" << e.what();
         QMessageBox::critical(this, "Error", "Error al enviar mensaje: " + QString(e.what()));
     } catch (...) {
-        QApplication::restoreOverrideCursor(); // asegurarse de restaurar el cursor
+        QApplication::restoreOverrideCursor();
         qDebug() << "Error desconocido al enviar mensaje";
         QMessageBox::critical(this, "Error", "Error desconocido al enviar mensaje.");
     }
@@ -364,7 +424,6 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
 
     QString username = chatItem->username();
     
-    // Depuración importante para verificar el nombre de usuario
     qDebug() << "DEBUG - onUserItemClicked: Usuario seleccionado=" << username;
     
     if (m_currentChat == username) {
@@ -372,56 +431,43 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
         return;
     }
 
-    // Extract the username without status
     if (username.contains("(")) {
         int startPos = username.indexOf("(");
         username = username.left(startPos).trimmed();
         qDebug() << "DEBUG - Nombre de usuario extraído sin estado:" << username;
     }
 
-    // Validar que el username no esté vacío
     if (username.isEmpty()) {
         qDebug() << "Error: nombre de usuario vacío";
         QMessageBox::warning(this, "Error", "No se pudo determinar el usuario seleccionado.");
         return;
     }
 
-    // No cambiar de chat si ya estamos en ese chat
     if (m_currentChat == username) {
         qDebug() << "Ya estamos en el chat con" << username;
         return;
     }
 
-    // Bloquear señales temporalmente
     ui->userListWidget->blockSignals(true);
-
-    // Set the current chat
     m_currentChat = username;
     qDebug() << "DEBUG - Cambiando chat actual a: " << m_currentChat;
-
-    // Set the chat title
     ui->chatTitle->setText(username);
-
-    // Set the chat status
     ui->chatStatus->setText(chatItem->status());
-
-    // Clear the chat area
+    
+    // Limpiar el área de chat ANTES de solicitar historial
     ui->messageDisplay->clear();
-
-    // Add system message indicating private chat
+    
+    // Agregar mensaje de sistema indicando chat privado
     addSystemMessage("Chat privado con " + username);
 
-    // Get chat history if connected
+    // Solicitar historial de chat (esto actualizará m_requestedHistoryChat)
     if (m_connected && m_webSocketClient) {
         getChatHistory(username);
     } else {
         qDebug() << "Advertencia: No se puede obtener historial, no conectado";
     }
-
-    // Reactivar señales
-    ui->userListWidget->blockSignals(false);
     
-    // Asegurarse de que el campo de mensajes y el botón están habilitados
+    ui->userListWidget->blockSignals(false);
     ui->messageInput->setEnabled(true);
     ui->sendButton->setEnabled(true);
     ui->messageInput->setFocus();
@@ -432,42 +478,26 @@ void MainWindow::clearMessageDisplay()
     ui->messageDisplay->clear();
     qDebug() << "MainWindow: Mensajes limpiados";
 }
+
 void MainWindow::onBroadcastItemClicked(QListWidgetItem *item)
 {
     if (!item) return;
 
     qDebug() << "Cambiando a chat general";
 
-    // Bloquear señales para evitar cambios múltiples
     ui->broadcastListWidget->blockSignals(true);
-
-    // Set the current chat to general
     m_currentChat = "~";
-
-    // Set the chat title
     ui->chatTitle->setText("General Chat");
-
-    // Clear the chat status
     ui->chatStatus->clear();
-
-    // Clear the chat area
     ui->messageDisplay->clear();
-    
-    // Add system message for general chat
     addSystemMessage("General Chat - Messages here are sent to all connected users");
     
-    // Get chat history
     if (m_connected && m_webSocketClient) {
         getChatHistory("~");
     }
 
-    // Desbloquear señales
     ui->broadcastListWidget->blockSignals(false);
-
-    // Hide user info sidebar if visible
     ui->userInfoSidebar->hide();
-    
-    // Enable message input
     ui->messageInput->setEnabled(m_connected);
     ui->sendButton->setEnabled(m_connected);
 }
@@ -493,13 +523,8 @@ void MainWindow::onStatusChanged(int index)
         m_inactivityTimer->start();
     }
     
-    // Send status update via WebSocketClient
     m_webSocketClient->changeUserStatus(newStatus);
-
-    // Update status bar
     ui->statusbar->showMessage("Status changed to " + m_currentStatus);
-    
-    // Set current avatar status
     updateUserAvatar();
 
     if (ui->userInfoSidebar->isVisible() && ui->userInfoName->text() == m_currentUsername) {
@@ -511,26 +536,21 @@ void MainWindow::onInfoButtonClicked()
 {
     QString currentChatTitle = ui->chatTitle->text();
 
-    // If in General Chat or no chat selected, show current user info
     if (currentChatTitle == "General Chat" || currentChatTitle == "Select a chat") {
         showCurrentUserInfo();
         return;
     }
 
-    // If we're in a direct chat, show the chat partner's info
     ui->userInfoSidebar->setVisible(!ui->userInfoSidebar->isVisible());
 
     if (ui->userInfoSidebar->isVisible()) {
-        // Set basic user info
         ui->userInfoName->setText(currentChatTitle);
         
-        // Set avatar
         QString firstLetter = currentChatTitle.isEmpty() ? 
                              QString("?") : 
                              QString(currentChatTitle.at(0).toUpper());
         ui->userInfoAvatar->setText(firstLetter);
         
-        // Generate avatar color
         int hash = 0;
         for (const QChar &c : currentChatTitle) {
             hash = ((hash << 5) - hash) + c.unicode();
@@ -538,7 +558,7 @@ void MainWindow::onInfoButtonClicked()
         
         QColor avatarColor;
         if (currentChatTitle.isEmpty()) {
-            avatarColor = QColor("#128C7E"); // Default color
+            avatarColor = QColor("#128C7E");
         } else {
             int hue = qAbs(hash) % 360;
             avatarColor = QColor::fromHsv(hue, 200, 200);
@@ -552,7 +572,6 @@ void MainWindow::onInfoButtonClicked()
                                                  "font-size: 36px;"
                                                  "}").arg(avatarColor.name()));
         
-        // Set status based on UI
         for (int i = 0; i < ui->userListWidget->count(); ++i) {
             QListWidgetItem *item = ui->userListWidget->item(i);
             UserChatItem *chatItem = qobject_cast<UserChatItem*>(ui->userListWidget->itemWidget(item));
@@ -561,7 +580,6 @@ void MainWindow::onInfoButtonClicked()
                 QString status = chatItem->status();
                 ui->userInfoStatusValue->setText(status);
                 
-                // Update status text color
                 if (status == "ACTIVO") {
                     ui->userInfoStatus->setText("Active");
                     ui->userInfoStatus->setStyleSheet("color: #2ecc71;");
@@ -580,26 +598,20 @@ void MainWindow::onInfoButtonClicked()
             }
         }
         
-        // For other users, we don't have their IP address from the server
         ui->userInfoIP->setText("N/A");
     }
 }
 
 void MainWindow::showCurrentUserInfo()
 {
-    // Show user info sidebar if it's not already visible
     ui->userInfoSidebar->setVisible(true);
-
-    // Set current user info
     ui->userInfoName->setText(m_currentUsername);
     
-    // Set avatar
     QString firstLetter = m_currentUsername.isEmpty() ? 
                          QString("?") : 
                          QString(m_currentUsername.at(0).toUpper());
     ui->userInfoAvatar->setText(firstLetter);
     
-    // Generate avatar color based on username (same as updateUserAvatar)
     int hash = 0;
     for (const QChar &c : m_currentUsername) {
         hash = ((hash << 5) - hash) + c.unicode();
@@ -607,7 +619,7 @@ void MainWindow::showCurrentUserInfo()
     
     QColor avatarColor;
     if (m_currentUsername.isEmpty()) {
-        avatarColor = QColor("#128C7E"); // Default color
+        avatarColor = QColor("#128C7E");
     } else {
         int hue = qAbs(hash) % 360;
         avatarColor = QColor::fromHsv(hue, 200, 200);
@@ -621,10 +633,8 @@ void MainWindow::showCurrentUserInfo()
                                              "font-size: 36px;"
                                              "}").arg(avatarColor.name()));
     
-    // Set status based on current user's status
     ui->userInfoStatusValue->setText(m_currentStatus);
     
-    // Update status text color
     if (m_currentStatus == "ACTIVO") {
         ui->userInfoStatus->setText("Active");
         ui->userInfoStatus->setStyleSheet("color: #2ecc71;");
@@ -639,7 +649,6 @@ void MainWindow::showCurrentUserInfo()
         ui->userInfoStatus->setStyleSheet("color: #95a5a6;");
     }
     
-    // Set IP address using the local IP address
     ui->userInfoIP->setText(getLocalIPAddress());
 }
 
@@ -650,8 +659,7 @@ void MainWindow::onCloseInfoButtonClicked()
 
 void MainWindow::onRefreshInfoButtonClicked()
 {
-    // Currently no way to refresh user     info with this protocol
-    // Keep as placeholder for future enhancement
+    // Actualmente no hay forma de refrescar la información de usuario
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
@@ -685,7 +693,6 @@ void MainWindow::onHelpTriggered()
 
 void MainWindow::onInactivityTimeout()
 {
-    // Change status to INACTIVE after inactivity
     if (m_connected && m_webSocketClient && m_currentStatus != "INACTIVO") {
         //ui->statusComboBox->setCurrentIndex(2); // INACTIVO
     }
@@ -694,17 +701,12 @@ void MainWindow::onInactivityTimeout()
 void MainWindow::onUserListReceived(const QStringList &users)
 {
     qDebug() << "Lista de usuarios recibida:" << users;
-
-    // Clear the user list
     ui->userListWidget->clear();
 
-    // Add users to the list
     for (const QString &userWithStatus : users) {
-        // Parse status from the user string
         QString username = userWithStatus;
-        QString statusText = "ACTIVO"; // Default status
+        QString statusText = "ACTIVO";
 
-        // Extract username and status
         if (username.contains("(")) {
             int startPos = username.indexOf("(");
             int endPos = username.indexOf(")");
@@ -715,16 +717,13 @@ void MainWindow::onUserListReceived(const QStringList &users)
             }
         }
 
-        // Skip if it's the current user
         if (username == m_currentUsername)
             continue;
 
-        // Skip if user is disconnected (case-insensitive)
         QString upperStatus = statusText.toUpper();
         if (upperStatus == "DESCONECTADO" || upperStatus == "DISCONNECTED" || upperStatus == "OFFLINE")
             continue;
 
-        // Add to the UI
         QListWidgetItem *item = new QListWidgetItem(ui->userListWidget);
         item->setSizeHint(QSize(0, 70));
 
@@ -733,22 +732,20 @@ void MainWindow::onUserListReceived(const QStringList &users)
     }
 }
 
-
 void MainWindow::onUserStatusReceived(quint8 status)
 {
     qDebug() << "Estado de usuario recibido:" << status;
     
-    // Update the status dropdown to match server state
     switch (status) {
-    case 0x01: // ACTIVO
+    case 0x01:
         m_currentStatus = "ACTIVO";
         ui->statusComboBox->setCurrentIndex(0);
         break;
-    case 0x02: // OCUPADO  
+    case 0x02:
         m_currentStatus = "OCUPADO";
         ui->statusComboBox->setCurrentIndex(1);
         break;
-    case 0x03: // INACTIVO
+    case 0x03:
         m_currentStatus = "INACTIVO";
         ui->statusComboBox->setCurrentIndex(2);
         break;
@@ -756,7 +753,6 @@ void MainWindow::onUserStatusReceived(quint8 status)
         break;
     }
     
-    // If user info sidebar is showing the current user, update it
     if (ui->userInfoSidebar->isVisible() && ui->userInfoName->text() == m_currentUsername) {
         showCurrentUserInfo();
     }
@@ -764,13 +760,11 @@ void MainWindow::onUserStatusReceived(quint8 status)
 
 void MainWindow::updateUserAvatar()
 {
-    // Get first letter of username
     QString firstLetter = m_currentUsername.isEmpty() ? 
                          QString("?") : 
                          QString(m_currentUsername.at(0).toUpper());
     ui->userAvatar->setText(firstLetter);
 
-    // Generate a color based on the username
     int hash = 0;
     for (const QChar &c : m_currentUsername) {
         hash = ((hash << 5) - hash) + c.unicode();
@@ -778,9 +772,8 @@ void MainWindow::updateUserAvatar()
 
     QColor avatarColor;
     if (m_currentUsername.isEmpty()) {
-        avatarColor = QColor("#128C7E"); // Default color
+        avatarColor = QColor("#128C7E");
     } else {
-        // Generate a hue based on the hash
         int hue = qAbs(hash) % 360;
         avatarColor = QColor::fromHsv(hue, 200, 200);
     }
@@ -803,20 +796,21 @@ void MainWindow::getChatHistory(const QString &chatName)
         return;
     }
     
-    // Validar el nombre del chat
     if (chatName.isEmpty()) {
         qDebug() << "Error: nombre de chat vacío";
         return;
     }
     
-    // Mostrar mensaje de carga
-    addSystemMessage("Cargando historial de mensajes...");
+    // Guardar para qué chat se está solicitando el historial
+    m_requestedHistoryChat = chatName;
+    qDebug() << "DEBUG - Guardando chat solicitado para historial:" << m_requestedHistoryChat;
     
-    // Clear current messages
+    // Mostrar mensaje de carga y limpiar el área de mensajes
+    addSystemMessage("Cargando historial de mensajes...");
     ui->messageDisplay->clear();
     
     try {
-        // Request history from the WebSocketClient
+        // Solicitar el historial al WebSocketClient
         m_webSocketClient->getChatHistory(chatName);
     } catch (const std::exception& e) {
         qDebug() << "Excepción al obtener historial:" << e.what();
@@ -853,7 +847,6 @@ void MainWindow::addChatMessage(const QString &sender, const QString &message, M
     QTextBrowser *display = ui->messageDisplay;
     QDateTime timestamp = QDateTime::currentDateTime();
     
-    // Construir el HTML basado en el tipo
     QString html;
     
     switch (type) {
@@ -900,13 +893,8 @@ void MainWindow::addChatMessage(const QString &sender, const QString &message, M
             break;
     }
     
-    // Para depuración - mostrar el HTML que estamos añadiendo
     qDebug() << "DEBUG - HTML generado:" << html.left(150) << "...";
-    
-    // Añadir al QTextBrowser
     display->append(html);
-    
-    // Scroll automático
     display->verticalScrollBar()->setValue(display->verticalScrollBar()->maximum());
 }
 
@@ -914,7 +902,6 @@ void MainWindow::addSystemMessage(const QString &message)
 {
     qDebug() << "DEBUG - addSystemMessage:" << message.left(50);
     
-    // Usar directamente la tabla HTML para centrado garantizado
     QString html = QString(
         "<table width='100%' cellspacing='0' cellpadding='0' border='0'>"
         "<tr><td align='center'>"
@@ -932,15 +919,12 @@ void MainWindow::addSystemMessage(const QString &message)
 
 void MainWindow::updateUserLastMessage(const QString &username, const QString &message)
 {
-    // Find the user in the list and update the last message
     for (int i = 0; i < ui->userListWidget->count(); ++i) {
         QListWidgetItem *item = ui->userListWidget->item(i);
         UserChatItem *chatItem = qobject_cast<UserChatItem*>(ui->userListWidget->itemWidget(item));
 
         if (chatItem && chatItem->username() == username) {
             chatItem->setLastMessage(message);
-
-            // Move this user to the top of the list
             QListWidgetItem *topItem = ui->userListWidget->takeItem(i);
             ui->userListWidget->insertItem(0, topItem);
             ui->userListWidget->setItemWidget(topItem, chatItem);
@@ -951,19 +935,16 @@ void MainWindow::updateUserLastMessage(const QString &username, const QString &m
 
 void MainWindow::loadDirectChatHistory(const QString &username)
 {
-    // This is now handled by getChatHistory and the WebSocketClient
     getChatHistory(username);
 }
 
 void MainWindow::loadBroadcastChatHistory()
 {
-    // This is now handled by getChatHistory and the WebSocketClient
     getChatHistory("~");
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    // Ensure clean disconnection when closing the window
     if (m_connected && m_webSocketClient) {
         m_webSocketClient->onDisconnected();
     }

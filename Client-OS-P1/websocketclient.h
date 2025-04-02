@@ -17,6 +17,8 @@ public:
 
 signals:
     void messageReceived(const QString& sender, const QString& message);
+    // NUEVA SEÑAL que incluye la bandera isHistory
+    void messageReceivedWithFlag(const QString& sender, const QString& message, bool isHistory);
     void userListReceived(const QStringList& users);
     void userStatusReceived(quint8 status);
     void connected();
