@@ -162,21 +162,7 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         break;
     }
 
-    case 0x57: { // Notificación de usuario desconectado
-        size_t offset = 1;
-        QString username = getString8(in, offset);
-
-        emit messageReceived("~", "🚪 " + username + " se ha desconectado.");
-
-        QByteArray payload;
-        QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x01);
-        socket.sendBinaryMessage(payload);
-
-        break;
-    }
-
-    case 0x50: // Error recibido
+    case 0x50:
         handleError(in);
         break;
 
@@ -293,14 +279,7 @@ bool WebSocketClient::isConnected() const {
 }
 
 void WebSocketClient::onDisconnected() {
-    if (socket.isValid()) {
-        QByteArray payload;
-        QDataStream out(&payload, QIODevice::WriteOnly);
-
-        out << quint8(0x06);
-        socket.sendBinaryMessage(payload);
-    }
-
+    // Simplemente cerrar la conexión sin enviar el mensaje 0x06
     socket.close();
     emit disconnected();
 }
