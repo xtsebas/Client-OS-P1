@@ -18,6 +18,8 @@ MainWindow::MainWindow(QWidget *parent)
     , m_networkManager(new QNetworkAccessManager(this))
 {
     ui->setupUi(this);
+    ui->userAvatar->setCursor(Qt::PointingHandCursor);
+    ui->userAvatar->installEventFilter(this);
     
     // Set window title
     setWindowTitle("Chat Application");
@@ -229,6 +231,10 @@ void MainWindow::onWebSocketConnected()
 
     // Add system message to chat
     addSystemMessage("Connected to server. You can now chat with other users.");
+
+    if (ui->userInfoSidebar->isVisible()) {
+        showCurrentUserInfo();
+    }
 }
 
 void MainWindow::onWebSocketDisconnected()
@@ -467,81 +473,146 @@ void MainWindow::onStatusChanged(int index)
     
     // Set current avatar status
     updateUserAvatar();
+
+    if (ui->userInfoSidebar->isVisible() && ui->userInfoName->text() == m_currentUsername) {
+        showCurrentUserInfo();
+    }
 }
 
 void MainWindow::onInfoButtonClicked()
 {
     QString currentChatTitle = ui->chatTitle->text();
 
-    // Only show user info for direct chats
-    if (currentChatTitle != "General Chat" && currentChatTitle != "Select a chat") {
-        // Show/hide the user info sidebar
-        ui->userInfoSidebar->setVisible(!ui->userInfoSidebar->isVisible());
-
-        if (ui->userInfoSidebar->isVisible()) {
-            // Set basic user info
-            ui->userInfoName->setText(currentChatTitle);
-            
-            // Set avatar
-            QString firstLetter = currentChatTitle.isEmpty() ? 
-                                 QString("?") : 
-                                 QString(currentChatTitle.at(0).toUpper());
-            ui->userInfoAvatar->setText(firstLetter);
-            
-            // Generate avatar color
-            int hash = 0;
-            for (const QChar &c : currentChatTitle) {
-                hash = ((hash << 5) - hash) + c.unicode();
-            }
-            
-            QColor avatarColor;
-            if (currentChatTitle.isEmpty()) {
-                avatarColor = QColor("#128C7E"); // Default color
-            } else {
-                int hue = qAbs(hash) % 360;
-                avatarColor = QColor::fromHsv(hue, 200, 200);
-            }
-            
-            ui->userInfoAvatar->setStyleSheet(QString("QLabel {"
-                                                     "background-color: %1;"
-                                                     "border-radius: 50px;"
-                                                     "color: white;"
-                                                     "font-weight: bold;"
-                                                     "font-size: 36px;"
-                                                     "}").arg(avatarColor.name()));
-            
-            // Set status based on UI
-            for (int i = 0; i < ui->userListWidget->count(); ++i) {
-                QListWidgetItem *item = ui->userListWidget->item(i);
-                UserChatItem *chatItem = qobject_cast<UserChatItem*>(ui->userListWidget->itemWidget(item));
-                
-                if (chatItem && chatItem->username() == currentChatTitle) {
-                    QString status = chatItem->status();
-                    ui->userInfoStatusValue->setText(status);
-                    
-                    // Update status text color
-                    if (status == "ACTIVO") {
-                        ui->userInfoStatus->setText("Active");
-                        ui->userInfoStatus->setStyleSheet("color: #2ecc71;");
-                    } else if (status == "OCUPADO") {
-                        ui->userInfoStatus->setText("Busy");
-                        ui->userInfoStatus->setStyleSheet("color: #e74c3c;");
-                    } else if (status == "INACTIVO") {
-                        ui->userInfoStatus->setText("Inactive");
-                        ui->userInfoStatus->setStyleSheet("color: #f1c40f;");
-                    } else {
-                        ui->userInfoStatus->setText(status);
-                        ui->userInfoStatus->setStyleSheet("color: #95a5a6;");
-                    }
-                    
-                    break;
-                }
-            }
-            
-            // Set IP address (we don't have this information from the server)
-            ui->userInfoIP->setText("N/A");
-        }
+    // If in General Chat or no chat selected, show current user info
+    if (currentChatTitle == "General Chat" || currentChatTitle == "Select a chat") {
+        showCurrentUserInfo();
+        return;
     }
+
+    // If we're in a direct chat, show the chat partner's info
+    ui->userInfoSidebar->setVisible(!ui->userInfoSidebar->isVisible());
+
+    if (ui->userInfoSidebar->isVisible()) {
+        // Set basic user info
+        ui->userInfoName->setText(currentChatTitle);
+        
+        // Set avatar
+        QString firstLetter = currentChatTitle.isEmpty() ? 
+                             QString("?") : 
+                             QString(currentChatTitle.at(0).toUpper());
+        ui->userInfoAvatar->setText(firstLetter);
+        
+        // Generate avatar color
+        int hash = 0;
+        for (const QChar &c : currentChatTitle) {
+            hash = ((hash << 5) - hash) + c.unicode();
+        }
+        
+        QColor avatarColor;
+        if (currentChatTitle.isEmpty()) {
+            avatarColor = QColor("#128C7E"); // Default color
+        } else {
+            int hue = qAbs(hash) % 360;
+            avatarColor = QColor::fromHsv(hue, 200, 200);
+        }
+        
+        ui->userInfoAvatar->setStyleSheet(QString("QLabel {"
+                                                 "background-color: %1;"
+                                                 "border-radius: 50px;"
+                                                 "color: white;"
+                                                 "font-weight: bold;"
+                                                 "font-size: 36px;"
+                                                 "}").arg(avatarColor.name()));
+        
+        // Set status based on UI
+        for (int i = 0; i < ui->userListWidget->count(); ++i) {
+            QListWidgetItem *item = ui->userListWidget->item(i);
+            UserChatItem *chatItem = qobject_cast<UserChatItem*>(ui->userListWidget->itemWidget(item));
+            
+            if (chatItem && chatItem->username() == currentChatTitle) {
+                QString status = chatItem->status();
+                ui->userInfoStatusValue->setText(status);
+                
+                // Update status text color
+                if (status == "ACTIVO") {
+                    ui->userInfoStatus->setText("Active");
+                    ui->userInfoStatus->setStyleSheet("color: #2ecc71;");
+                } else if (status == "OCUPADO") {
+                    ui->userInfoStatus->setText("Busy");
+                    ui->userInfoStatus->setStyleSheet("color: #e74c3c;");
+                } else if (status == "INACTIVO") {
+                    ui->userInfoStatus->setText("Inactive");
+                    ui->userInfoStatus->setStyleSheet("color: #f1c40f;");
+                } else {
+                    ui->userInfoStatus->setText(status);
+                    ui->userInfoStatus->setStyleSheet("color: #95a5a6;");
+                }
+                
+                break;
+            }
+        }
+        
+        // For other users, we don't have their IP address from the server
+        ui->userInfoIP->setText("N/A");
+    }
+}
+
+void MainWindow::showCurrentUserInfo()
+{
+    // Show user info sidebar if it's not already visible
+    ui->userInfoSidebar->setVisible(true);
+
+    // Set current user info
+    ui->userInfoName->setText(m_currentUsername);
+    
+    // Set avatar
+    QString firstLetter = m_currentUsername.isEmpty() ? 
+                         QString("?") : 
+                         QString(m_currentUsername.at(0).toUpper());
+    ui->userInfoAvatar->setText(firstLetter);
+    
+    // Generate avatar color based on username (same as updateUserAvatar)
+    int hash = 0;
+    for (const QChar &c : m_currentUsername) {
+        hash = ((hash << 5) - hash) + c.unicode();
+    }
+    
+    QColor avatarColor;
+    if (m_currentUsername.isEmpty()) {
+        avatarColor = QColor("#128C7E"); // Default color
+    } else {
+        int hue = qAbs(hash) % 360;
+        avatarColor = QColor::fromHsv(hue, 200, 200);
+    }
+    
+    ui->userInfoAvatar->setStyleSheet(QString("QLabel {"
+                                             "background-color: %1;"
+                                             "border-radius: 50px;"
+                                             "color: white;"
+                                             "font-weight: bold;"
+                                             "font-size: 36px;"
+                                             "}").arg(avatarColor.name()));
+    
+    // Set status based on current user's status
+    ui->userInfoStatusValue->setText(m_currentStatus);
+    
+    // Update status text color
+    if (m_currentStatus == "ACTIVO") {
+        ui->userInfoStatus->setText("Active");
+        ui->userInfoStatus->setStyleSheet("color: #2ecc71;");
+    } else if (m_currentStatus == "OCUPADO") {
+        ui->userInfoStatus->setText("Busy");
+        ui->userInfoStatus->setStyleSheet("color: #e74c3c;");
+    } else if (m_currentStatus == "INACTIVO") {
+        ui->userInfoStatus->setText("Inactive");
+        ui->userInfoStatus->setStyleSheet("color: #f1c40f;");
+    } else {
+        ui->userInfoStatus->setText(m_currentStatus);
+        ui->userInfoStatus->setStyleSheet("color: #95a5a6;");
+    }
+    
+    // Set IP address using the local IP address
+    ui->userInfoIP->setText(getLocalIPAddress());
 }
 
 void MainWindow::onCloseInfoButtonClicked()
@@ -551,8 +622,17 @@ void MainWindow::onCloseInfoButtonClicked()
 
 void MainWindow::onRefreshInfoButtonClicked()
 {
-    // Currently no way to refresh user info with this protocol
+    // Currently no way to refresh user     info with this protocol
     // Keep as placeholder for future enhancement
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->userAvatar && event->type() == QEvent::MouseButtonPress) {
+        showCurrentUserInfo();
+        return true;
+    }
+    return QMainWindow::eventFilter(obj, event);
 }
 
 void MainWindow::onAboutTriggered()
@@ -646,6 +726,11 @@ void MainWindow::onUserStatusReceived(quint8 status)
         break;
     default:
         break;
+    }
+    
+    // If user info sidebar is showing the current user, update it
+    if (ui->userInfoSidebar->isVisible() && ui->userInfoName->text() == m_currentUsername) {
+        showCurrentUserInfo();
     }
 }
 

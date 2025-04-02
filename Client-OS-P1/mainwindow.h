@@ -61,6 +61,7 @@ private slots:
     void onInfoButtonClicked();
     void onCloseInfoButtonClicked();
     void onRefreshInfoButtonClicked();
+    void showCurrentUserInfo();
     
     // Menu actions
     void onAboutTriggered();
@@ -75,6 +76,7 @@ private slots:
     
 protected:
     void closeEvent(QCloseEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     // Core UI setup
