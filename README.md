@@ -112,32 +112,32 @@ El cliente implementa un protocolo binario para comunicarse con el servidor WebS
 
 | Opcode | Descripción | Formato del payload |
 |--------|-------------|---------------------|
-| 0x01   | Solicitar lista de usuarios | (sin datos adicionales) |
-| 0x02   | Solicitar información de usuario | <uint8:user_len><char[]:username> |
-| 0x03   | Cambiar estado de usuario | <uint8:user_len><char[]:username><uint8:status> |
-| 0x04   | Enviar mensaje | <uint8:recipient_len><char[]:recipient><uint8:msg_len><char[]:message> |
-| 0x05   | Solicitar historial de chat | <uint8:chat_len><char[]:chat_name> |
+|    1   | Solicitar lista de usuarios | (sin datos adicionales) |
+|    2   | Solicitar información de usuario | <uint8:user_len><char[]:username> |
+|    3   | Cambiar estado de usuario | <uint8:user_len><char[]:username><uint8:status> |
+|    4   | Enviar mensaje | <uint8:recipient_len><char[]:recipient><uint8:msg_len><char[]:message> |
+|    5   | Solicitar historial de chat | <uint8:chat_len><char[]:chat_name> |
 
 ### Mensajes del Servidor al Cliente
 
 | Opcode | Descripción | Formato del payload |
 |--------|-------------|---------------------|
-| 0x50   | Error | <uint8:error_code> |
-| 0x51   | Lista de usuarios | <uint8:num_users>[<uint8:user_len><char[]:username><uint8:status>]* |
-| 0x52   | Información de usuario | <uint8:user_len><char[]:username><uint8:status> |
-| 0x53   | Usuario conectado | <uint8:user_len><char[]:username> |
-| 0x54   | Cambio de estado de usuario | <uint8:user_len><char[]:username><uint8:new_status> |
-| 0x55   | Mensaje recibido | <uint8:sender_len><char[]:sender><uint8:msg_len><char[]:message> |
-| 0x56   | Historial de chat | <uint8:num_msgs>[<uint8:sender_len><char[]:sender><uint8:msg_len><char[]:message>]* |
+|   50   | Error | <uint8:error_code> |
+|   51   | Lista de usuarios | <uint8:num_users>[<uint8:user_len><char[]:username><uint8:status>]* |
+|   52   | Información de usuario | <uint8:user_len><char[]:username><uint8:status> |
+|   53   | Usuario conectado | <uint8:user_len><char[]:username> |
+|   54   | Cambio de estado de usuario | <uint8:user_len><char[]:username><uint8:new_status> |
+|   55   | Mensaje recibido | <uint8:sender_len><char[]:sender><uint8:msg_len><char[]:message> |
+|   56   | Historial de chat | <uint8:num_msgs>[<uint8:sender_len><char[]:sender><uint8:msg_len><char[]:message>]* |
 
 ### Estados de Usuario
 
 | Valor | Descripción |
 |-------|-------------|
-| 0x00  | Desconectado |
-| 0x01  | Activo |
-| 0x02  | Ocupado |
-| 0x03  | Inactivo |
+|   0   | Desconectado |
+|   1   | Activo |
+|   2   | Ocupado |
+|   3   | Inactivo |
 
 ## Características Implementadas
 
