@@ -23,13 +23,13 @@ void WebSocketClient::onConnected() {
     // Solicitar lista de usuarios al conectar
     QByteArray payload;
     QDataStream out(&payload, QIODevice::WriteOnly);
-    out << quint8(0x01);  // 0x01 → Solicitar lista de usuarios
+    out << quint8(1);  // Cambiado de 0x01 a 1 - Solicitar lista de usuarios
     socket.sendBinaryMessage(payload);
 
     // Solicitar información del usuario actual para obtener el estado
     QByteArray userInfoPayload;
     QDataStream outInfo(&userInfoPayload, QIODevice::WriteOnly);
-    outInfo << quint8(0x02) << quint8(username.size());
+    outInfo << quint8(2) << quint8(username.size());  // Cambiado de 0x02 a 2
     outInfo.writeRawData(username.toUtf8().data(), username.size());
     socket.sendBinaryMessage(userInfoPayload);
 }
@@ -40,7 +40,7 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
     in >> opcode;
 
     switch (opcode) {
-    case 0x51: { // Lista de usuarios conectados
+    case 51: { // Cambiado de 0x51 a 51 - Lista de usuarios conectados
         size_t offset = 1;
         quint8 numUsers;
         in >> numUsers;
@@ -53,9 +53,9 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
 
             QString statusText;
             switch (status) {
-            case 0x01: statusText = "Activo"; break;
-            case 0x02: statusText = "Ocupado"; break;
-            case 0x03: statusText = "Inactivo"; break;
+            case 1: statusText = "Activo"; break;  // Valores no cambiados porque ya son decimales
+            case 2: statusText = "Ocupado"; break;
+            case 3: statusText = "Inactivo"; break;
             default: statusText = "Desconectado";
             }
 
@@ -66,7 +66,7 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         break;
     }
 
-    case 0x52: { // Información del usuario (estado actual)
+    case 52: { // Cambiado de 0x52 a 52 - Información del usuario (estado actual)
         size_t offset = 1;
         QString username = getString8(in, offset);
         quint8 status;
@@ -75,7 +75,7 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         break;
     }
 
-    case 0x53: { // Usuario conectado
+    case 53: { // Cambiado de 0x53 a 53 - Usuario conectado
         size_t offset = 1;
         QString username = getString8(in, offset);
 
@@ -83,13 +83,13 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
 
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x01);
+        out << quint8(1);  // Cambiado de 0x01 a 1
         socket.sendBinaryMessage(payload);
 
         break;
     }
 
-    case 0x54: {
+    case 54: { // Cambiado de 0x54 a 54 - Cambio de estado
         size_t offset = 1;
         QString username = getString8(in, offset);
         quint8 newStatus;
@@ -111,10 +111,10 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
 
         QString message;
         switch (newStatus) {
-        case 0x00: message = "🚪 " + username + " se ha desconectado."; break;
-        case 0x01: message = "✅ " + username + " está activo."; break;
-        case 0x02: message = "🔴 " + username + " está ocupado."; break;
-        case 0x03: message = "💤 " + username + " está inactivo."; break;
+        case 0: message = "🚪 " + username + " se ha desconectado."; break;
+        case 1: message = "✅ " + username + " está activo."; break;
+        case 2: message = "🔴 " + username + " está ocupado."; break;
+        case 3: message = "💤 " + username + " está inactivo."; break;
         default: break;
         }
 
@@ -128,13 +128,13 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
 
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x01);
+        out << quint8(1);  // Cambiado de 0x01 a 1
         socket.sendBinaryMessage(payload);
 
         break;
     }
 
-    case 0x55: { // Nuevo mensaje recibido (mensaje normal)
+    case 55: { // Cambiado de 0x55 a 55 - Nuevo mensaje recibido (mensaje normal)
         size_t offset = 1;
         QString sender = getString8(in, offset);
         QString msg = getString8(in, offset);
@@ -143,7 +143,7 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         break;
     }
 
-    case 0x56: { // Historial recibido
+    case 56: { // Cambiado de 0x56 a 56 - Historial recibido
         size_t offset = 1;
         quint8 numMessages;
         in >> numMessages;
@@ -162,7 +162,7 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         break;
     }
 
-    case 0x50:
+    case 50: // Cambiado de 0x50 a 50 - Códigos de error
         handleError(in);
         break;
 
@@ -177,17 +177,17 @@ void WebSocketClient::handleError(QDataStream& in) {
 
     QString errorMessage;
     switch (errorCode) {
-    case 0x01:
+    case 1: // Cambiado de 0x01 a 1
         errorMessage = "El usuario ya está conectado. Por favor, elige otro nombre.";
         emit connectionRejected();
         break;
-    case 0x02:
+    case 2: // Cambiado de 0x02 a 2
         errorMessage = "Estado inválido.";
         break;
-    case 0x03:
+    case 3: // Cambiado de 0x03 a 3
         errorMessage = "Mensaje vacío.";
         break;
-    case 0x04:
+    case 4: // Cambiado de 0x04 a 4
         errorMessage = "El destinatario está desconectado.";
         break;
     default:
@@ -219,7 +219,7 @@ void WebSocketClient::sendMessage(const QString& recipient, const QString& messa
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
 
-        out << quint8(0x04);
+        out << quint8(4);  // Cambiado de 0x04 a 4 - Enviar mensaje
         out << quint8(recipient.size());
         out.writeRawData(recipient.toUtf8().data(), recipient.size());
         out << quint8(message.size());
@@ -245,7 +245,7 @@ void WebSocketClient::getChatHistory(const QString& chatName) {
     if (socket.isValid()) {
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x05);
+        out << quint8(5);  // Cambiado de 0x05 a 5 - Obtener historial
         out << quint8(chatName.size());
         out.writeRawData(chatName.toUtf8().data(), chatName.size());
         socket.sendBinaryMessage(payload);
@@ -256,7 +256,7 @@ void WebSocketClient::changeUserStatus(quint8 newStatus) {
     if (socket.isValid()) {
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x03);
+        out << quint8(3);  // Cambiado de 0x03 a 3 - Cambiar estado
 
         out << quint8(username.size());
         out.writeRawData(username.toUtf8().data(), username.size());
