@@ -93,17 +93,27 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         break;
     }
 
-    case 0x54: { // Usuario desconectado
+    case 0x54: {
         size_t offset = 1;
         QString username = getString8(in, offset);
 
-        // Mostrar notificación de usuario desconectado
-        emit messageReceived("~", "🚪 " + username + " se ha desconectado.");
+        quint8 newStatus;
+        in >> newStatus;
 
-        // Solicitar lista actualizada de usuarios
+        if (newStatus == 0x00) {
+            emit messageReceived("~", "🚪 " + username + " se ha desconectado.");
+        } else if (newStatus == 0x01) {
+            emit messageReceived("~", "✅ " + username + " está activo.");
+        } else if (newStatus == 0x02) {
+            emit messageReceived("~", "🔴 " + username + " está ocupado.");
+        } else if (newStatus == 0x03) {
+            emit messageReceived("~", "💤 " + username + " está inactivo.");
+        }
+
+        // Pedir actualización de lista
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
-        out << quint8(0x01);  // 0x01 → Solicitar lista de usuarios
+        out << quint8(0x01);  // Solicitar lista actualizada
         socket.sendBinaryMessage(payload);
 
         break;
@@ -248,9 +258,20 @@ void WebSocketClient::changeUserStatus(quint8 newStatus) {
         QByteArray payload;
         QDataStream out(&payload, QIODevice::WriteOnly);
         out << quint8(0x03);
+
+        out <<quint8(username.size());
+        out.writeRawData(username.toUtf8().data(), username.size());
+
         out << newStatus;
+
         socket.sendBinaryMessage(payload);
         emit statusChanged(newStatus);
+        QByteArray debugPayload = payload;
+        QString hexDump;
+        for (char byte : debugPayload) {
+            hexDump += QString("%1 ").arg((quint8)byte, 2, 16, QLatin1Char('0'));
+        }
+        qDebug() << "[WebSocketClient] Payload (hex):" << hexDump;
     }
 }
 

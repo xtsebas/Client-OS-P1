@@ -325,7 +325,7 @@ void MainWindow::onSendButtonClicked()
 void MainWindow::onMessageInputChanged()
 {
     // Reset inactivity timer when typing
-    if (m_inactivityTimer->isActive()) {
+    if (m_inactivityTimer->isActive() && m_currentStatus != "INACTIVO") {
         m_inactivityTimer->start();
     }
 }
@@ -454,6 +454,10 @@ void MainWindow::onStatusChanged(int index)
     }
 
     qDebug() << "Intentando cambiar el estado a:" << m_currentStatus << "(" << newStatus << ")";
+
+    if (newStatus != 0x03 && m_inactivityTimer->isActive()) {
+        m_inactivityTimer->start();
+    }
     
     // Send status update via WebSocketClient
     m_webSocketClient->changeUserStatus(newStatus);
@@ -575,7 +579,7 @@ void MainWindow::onInactivityTimeout()
 {
     // Change status to INACTIVE after inactivity
     if (m_connected && m_webSocketClient && m_currentStatus != "INACTIVO") {
-        ui->statusComboBox->setCurrentIndex(2); // INACTIVO
+        //ui->statusComboBox->setCurrentIndex(2); // INACTIVO
     }
 }
 
