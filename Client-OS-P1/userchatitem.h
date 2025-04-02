@@ -21,7 +21,7 @@ public:
 
         // Main layout
         QHBoxLayout *mainLayout = new QHBoxLayout(this);
-        mainLayout->setContentsMargins(10, 10, 10, 10);
+        mainLayout->setContentsMargins(10, 10, 5, 10);
 
         // Avatar - circular label with first letter of username
         m_avatarLabel = new QLabel(this);
@@ -41,6 +41,7 @@ public:
         QFont usernameFont = m_usernameLabel->font();
         usernameFont.setBold(true);
         m_usernameLabel->setFont(usernameFont);
+        m_usernameLabel->setStyleSheet("color: #333333;");
 
         // Status indicator
         m_statusIndicator = new QLabel(this);
@@ -48,8 +49,8 @@ public:
 
         // Last message label
         m_lastMessageLabel = new QLabel(lastMessage, this);
-        m_lastMessageLabel->setMaximumWidth(200);
-        m_lastMessageLabel->setStyleSheet("color: #666666; font-size: 12px;");
+        //m_lastMessageLabel->setMaximumWidth(200);
+        m_lastMessageLabel->setStyleSheet("color: #333333; font-size: 12px;");
         m_lastMessageLabel->setWordWrap(true);
         m_lastMessageLabel->setMaximumHeight(35);
 
