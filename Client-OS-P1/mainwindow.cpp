@@ -350,8 +350,8 @@ void MainWindow::onMessageReceivedWithFlag(const QString &sender, const QString 
         }
         // Mensaje normal (no historial)
         else {
-            // Mostrar el mensaje solo si se trata del chat general o privado con este remitente
-            if (m_currentChat == "~" || m_currentChat == sender) {
+            // Mostrar el mensaje solo si es un mensaje para el chat general o si estamos en el chat privado con este remitente
+            if ((sender == "~" && m_currentChat == "~") || m_currentChat == sender) {
                 addChatMessage(sender, message, MessageBubble::Received);
             }
         }
