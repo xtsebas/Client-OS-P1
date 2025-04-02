@@ -40,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->userListWidget, &QListWidget::itemClicked, this, &MainWindow::onUserItemClicked);
     connect(ui->broadcastListWidget, &QListWidget::itemClicked, this, &MainWindow::onBroadcastItemClicked);
+    connect(ui->searchUsers, &QLineEdit::textChanged, this, &MainWindow::onSearchTextChanged);
     
     // Conexión para limpiar mensajes solicitada por el WebSocketClient
     connect(m_webSocketClient, &WebSocketClient::clearMessages, this, [=]() {
@@ -992,6 +993,21 @@ void MainWindow::onExternalUserStatusChanged(const QString& username, quint8 new
     }
 }
 
+void MainWindow::onSearchTextChanged(const QString &text)
+{
+    QString searchText = text.trimmed().toLower();
+
+    for (int i = 0; i < ui->userListWidget->count(); ++i) {
+        QListWidgetItem *item = ui->userListWidget->item(i);
+        UserChatItem *chatItem = qobject_cast<UserChatItem*>(ui->userListWidget->itemWidget(item));
+
+        if (chatItem) {
+            bool match = searchText.isEmpty() ||
+                         chatItem->username().toLower().contains(searchText);
+            item->setHidden(!match);
+        }
+    }
+}
 
 void MainWindow::loadDirectChatHistory(const QString &username)
 {

@@ -62,6 +62,7 @@ private slots:
     void onBroadcastItemClicked(QListWidgetItem *item);
     void onStatusChanged(int index);
     void onExternalUserStatusChanged(const QString &username, quint8 newStatus);
+    void onSearchTextChanged(const QString &text);
 
     // Info panel
     void onInfoButtonClicked();
