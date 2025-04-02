@@ -38,6 +38,9 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+public slots:
+    void clearMessageDisplay();  // Nuevo slot
+
 private slots:
     // Connection handling
     void onConnectTriggered();

@@ -39,6 +39,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->userListWidget, &QListWidget::itemClicked, this, &MainWindow::onUserItemClicked);
     connect(ui->broadcastListWidget, &QListWidget::itemClicked, this, &MainWindow::onBroadcastItemClicked);
+    connect(m_webSocketClient, &WebSocketClient::clearMessages, this, [=]() {
+        ui->messageDisplay->clear();
+        qDebug() << "MainWindow: Mensajes limpiados por solicitud del WebSocketClient";
+    });
 
     connect(ui->statusComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::onStatusChanged);
@@ -247,34 +251,39 @@ void MainWindow::onWebSocketDisconnected()
 
 void MainWindow::onMessageReceived(const QString &sender, const QString &message)
 {
-    qDebug() << "Mensaje recibido de:" << sender << "- Mensaje:" << message;
+    qDebug() << "DEBUG - onMessageReceived: Emisor=" << sender << "Mensaje=" << message.left(30);
+    qDebug() << "DEBUG - Estado: Usuario actual=" << m_currentUsername << "Chat actual=" << m_currentChat;
     
-    // Reset inactivity timer on any received message
+    // Restablecer el temporizador de inactividad
     if (m_inactivityTimer->isActive()) {
         m_inactivityTimer->start();
     }
 
-    // Mostrar mensajes SOLO si pertenecen al chat activo
-    if (m_currentChat == "~") {
-        // Chat general
-        if (sender == m_currentUsername) {
+    // CASO 1: Mensaje del sistema (desde ~)
+    if (sender == "~") {
+        qDebug() << "DEBUG - Tipo identificado: MENSAJE DEL SISTEMA";
+        addSystemMessage(message);
+        return; // Importante: ya se ha añadido el mensaje, salir del método
+    }
+    
+    // CASO 2: Es un mensaje que YO he enviado
+    else if (sender == m_currentUsername) {
+        qDebug() << "DEBUG - Tipo identificado: MENSAJE ENVIADO POR MÍ";
+        
+        // Si estamos en chat general o en el chat correcto, mostrar el mensaje
+        if (m_currentChat == "~" || m_currentChat == message.section(':', 0, 0).trimmed()) {
             addChatMessage("Tú", message, MessageBubble::Sent);
-        } else if (sender == "~") {
-            addSystemMessage(message);
-        } else {
-            addChatMessage(sender, message, MessageBubble::Received);
         }
     }
-    else if (m_currentChat == sender) {
-        // Mensaje recibido de otro usuario en chat privado
-        addChatMessage(sender, message, MessageBubble::Received);
-    }
-    else if (sender == m_currentUsername && m_currentChat != "~") {
-        // Mensaje enviado por mí en chat privado
-        addChatMessage("Tú", message, MessageBubble::Sent);
-    }
+    
+    // CASO 3: Mensaje recibido de otro usuario
     else {
-        qDebug() << "Mensaje ignorado, no pertenece al chat actual.";
+        qDebug() << "DEBUG - Tipo identificado: MENSAJE RECIBIDO DE OTRO";
+        
+        // Mostrar solo si es el chat general o privado con este remitente
+        if (m_currentChat == "~" || m_currentChat == sender) {
+            addChatMessage(sender, message, MessageBubble::Received);
+        }
     }
 }
 
@@ -404,6 +413,13 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
     // Reactivar señales
     ui->userListWidget->blockSignals(false);
 }
+
+void MainWindow::clearMessageDisplay()
+{
+    ui->messageDisplay->clear();
+    qDebug() << "MainWindow: Mensajes limpiados";
+}
+
 void MainWindow::onBroadcastItemClicked(QListWidgetItem *item)
 {
     if (!item) return;
@@ -815,50 +831,88 @@ QString MainWindow::getLocalIPAddress() {
 
 void MainWindow::addChatMessage(const QString &sender, const QString &message, MessageBubble::MessageType type)
 {
-    qDebug() << "Añadiendo mensaje al chat desde:" << sender << "tipo:" << type;
+    qDebug() << "DEBUG - addChatMessage: Emisor=" << sender 
+             << "Tipo=" << (type == MessageBubble::System ? "Sistema" : 
+                           (type == MessageBubble::Sent ? "Enviado" : "Recibido"));
     
-    // Create a MessageBubble widget for the message
-    QDateTime timestamp = QDateTime::currentDateTime();
-    MessageBubble *bubble = new MessageBubble(sender, message, timestamp, type);
-
-    // Add the bubble to the chat display
     QTextBrowser *display = ui->messageDisplay;
-
-    // Simplified approach: just add text directly to the text browser
-    QString formattedText;
+    QDateTime timestamp = QDateTime::currentDateTime();
     
-    if (type == MessageBubble::System) {
-        formattedText = QString("<div style='text-align:center; margin:5px; padding:5px; background-color:#e1f3fb; border-radius:5px; color:#555;'><b>System:</b> %1</div>").arg(message);
-    } else if (type == MessageBubble::Sent) {
-        formattedText = QString("<div style='text-align:right; margin:5px;'>"
-                                "<div style='display:inline-block; background-color:#dcf8c6; padding:8px; border-radius:10px; max-width:80%%; white-space: pre-wrap;'>"
-                                "<b>%1:</b> %2<br><span style='font-size:10px; color:#888;'>%3</span>"
-                                "</div></div>")
-                            .arg(sender)
-                            .arg(message.toHtmlEscaped())
-                            .arg(timestamp.toString("hh:mm AP"));
-    } else { // Received
-        formattedText = QString("<div style='text-align:left; margin:5px;'>"
-                                "<div style='display:inline-block; background-color:#ffffff; padding:8px; border-radius:10px; max-width:80%%; border: 1px solid #ddd; white-space: pre-wrap;'>"
-                                "<b>%1:</b> %2<br><span style='font-size:10px; color:#888;'>%3</span>"
-                                "</div></div>")
-                            .arg(sender)
-                            .arg(message.toHtmlEscaped())
-                            .arg(timestamp.toString("hh:mm AP"));
+    // Construir el HTML basado en el tipo
+    QString html;
+    
+    switch (type) {
+        case MessageBubble::System:
+            html = QString(
+                "<table width='100%' cellspacing='0' cellpadding='0' border='0'>"
+                "<tr><td align='center'>"
+                "<div style='display:inline-block; background-color:#e1f3fb; color:#555; "
+                "border-radius:5px; padding:8px; margin:5px; max-width:80%;'>"
+                "<b>Sistema:</b> %1"
+                "</div>"
+                "</td></tr>"
+                "</table>"
+            ).arg(message.toHtmlEscaped());
+            break;
+            
+        case MessageBubble::Sent:
+            html = QString(
+                "<table width='100%' cellspacing='0' cellpadding='0' border='0'>"
+                "<tr><td align='right'>"
+                "<div style='display:inline-block; background-color:#dcf8c6; color:#000; "
+                "border-radius:10px; padding:8px; margin:5px; max-width:80%;'>"
+                "<b>%1:</b> %2<br>"
+                "<span style='font-size:10px; color:#888;'>%3</span>"
+                "</div>"
+                "</td></tr>"
+                "</table>"
+            ).arg(sender).arg(message.toHtmlEscaped()).arg(timestamp.toString("hh:mm AP"));
+            break;
+            
+        case MessageBubble::Received:
+        default:
+            html = QString(
+                "<table width='100%' cellspacing='0' cellpadding='0' border='0'>"
+                "<tr><td align='left'>"
+                "<div style='display:inline-block; background-color:#ffffff; color:#000; "
+                "border:1px solid #ddd; border-radius:10px; padding:8px; margin:5px; max-width:80%;'>"
+                "<b>%1:</b> %2<br>"
+                "<span style='font-size:10px; color:#888;'>%3</span>"
+                "</div>"
+                "</td></tr>"
+                "</table>"
+            ).arg(sender).arg(message.toHtmlEscaped()).arg(timestamp.toString("hh:mm AP"));
+            break;
     }
     
-    display->append(formattedText);
+    // Para depuración - mostrar el HTML que estamos añadiendo
+    qDebug() << "DEBUG - HTML generado:" << html.left(150) << "...";
     
-    // Make sure we scroll to see the new message
+    // Añadir al QTextBrowser
+    display->append(html);
+    
+    // Scroll automático
     display->verticalScrollBar()->setValue(display->verticalScrollBar()->maximum());
 }
 
 void MainWindow::addSystemMessage(const QString &message)
 {
-    qDebug() << "Añadiendo mensaje de sistema:" << message;
+    qDebug() << "DEBUG - addSystemMessage:" << message.left(50);
     
-    // Reutilizar el método addChatMessage con tipo System
-    addChatMessage("System", message, MessageBubble::System);
+    // Usar directamente la tabla HTML para centrado garantizado
+    QString html = QString(
+        "<table width='100%' cellspacing='0' cellpadding='0' border='0'>"
+        "<tr><td align='center'>"
+        "<div style='display:inline-block; background-color:#e1f3fb; color:#555; "
+        "border-radius:5px; padding:8px; margin:5px; max-width:80%;'>"
+        "<b>Sistema:</b> %1"
+        "</div>"
+        "</td></tr>"
+        "</table>"
+    ).arg(message.toHtmlEscaped());
+    
+    ui->messageDisplay->append(html);
+    ui->messageDisplay->verticalScrollBar()->setValue(ui->messageDisplay->verticalScrollBar()->maximum());
 }
 
 void MainWindow::updateUserLastMessage(const QString &username, const QString &message)

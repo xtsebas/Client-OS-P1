@@ -23,6 +23,7 @@ signals:
     void disconnected();
     void statusChanged(quint8 newStatus);
     void connectionRejected();
+    void clearMessages();  // Nueva señal
 
 private slots:
     void onConnected();

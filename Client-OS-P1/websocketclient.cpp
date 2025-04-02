@@ -131,13 +131,18 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         size_t offset = 1;
         quint8 numMessages;
         in >> numMessages;
-
-        qDebug() << "Recibidos" << numMessages << "mensajes en el historial.";
-
+    
+        qDebug() << "WebSocketClient: Recibidos" << numMessages << "mensajes en el historial.";
+    
+        // Limpiar mensajes actuales antes de mostrar el historial
+        emit clearMessages();  // Necesitarás añadir esta señal
+    
         for (int i = 0; i < numMessages; ++i) {
             QString sender = getString8(in, offset);
             QString msg = getString8(in, offset);
-
+            
+            qDebug() << "WebSocketClient: Historial #" << i << "- De:" << sender << "- Mensaje:" << msg.left(30);
+            
             emit messageReceived(sender, msg);
         }
         break;
