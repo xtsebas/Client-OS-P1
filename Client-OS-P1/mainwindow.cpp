@@ -263,17 +263,17 @@ void MainWindow::onMessageReceived(const QString &sender, const QString &message
     if (sender == "~") {
         qDebug() << "DEBUG - Tipo identificado: MENSAJE DEL SISTEMA";
         addSystemMessage(message);
-        return; // Importante: ya se ha añadido el mensaje, salir del método
+        return;
     }
     
     // CASO 2: Es un mensaje que YO he enviado
     else if (sender == m_currentUsername) {
         qDebug() << "DEBUG - Tipo identificado: MENSAJE ENVIADO POR MÍ";
         
-        // Si estamos en chat general o en el chat correcto, mostrar el mensaje
-        if (m_currentChat == "~" || m_currentChat == message.section(':', 0, 0).trimmed()) {
-            addChatMessage("Tú", message, MessageBubble::Sent);
-        }
+        // IMPORTANTE: No procesamos mensajes propios que vienen del servidor,
+        // ya que los mostramos inmediatamente cuando los enviamos en onSendButtonClicked
+        // Esto evita la duplicación
+        return;
     }
     
     // CASO 3: Mensaje recibido de otro usuario
@@ -300,7 +300,7 @@ void MainWindow::onSendButtonClicked()
         return;
     }
 
-    qDebug() << "Intentando enviar mensaje a:" << m_currentChat << "- Mensaje:" << message;
+    qDebug() << "DEBUG - onSendButtonClicked: Enviando mensaje a:" << m_currentChat << "- Mensaje:" << message;
 
     // Validar el destinatario
     if (m_currentChat.isEmpty()) {
@@ -320,6 +320,9 @@ void MainWindow::onSendButtonClicked()
 
         // Send the message using WebSocketClient with REAL username (NOT "Tú")
         m_webSocketClient->sendMessage(m_currentChat, message);
+        
+        // Mostrar mensaje localmente inmediatamente
+        addChatMessage("Tú", message, MessageBubble::Sent);
 
         // Clear input field
         ui->messageInput->clear();
@@ -360,6 +363,10 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
     }
 
     QString username = chatItem->username();
+    
+    // Depuración importante para verificar el nombre de usuario
+    qDebug() << "DEBUG - onUserItemClicked: Usuario seleccionado=" << username;
+    
     if (m_currentChat == username) {
         qDebug() << "Ya estamos en el chat con" << username;
         return;
@@ -369,7 +376,7 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
     if (username.contains("(")) {
         int startPos = username.indexOf("(");
         username = username.left(startPos).trimmed();
-        qDebug() << "Nombre de usuario extraído sin estado:" << username;
+        qDebug() << "DEBUG - Nombre de usuario extraído sin estado:" << username;
     }
 
     // Validar que el username no esté vacío
@@ -390,6 +397,7 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
 
     // Set the current chat
     m_currentChat = username;
+    qDebug() << "DEBUG - Cambiando chat actual a: " << m_currentChat;
 
     // Set the chat title
     ui->chatTitle->setText(username);
@@ -397,7 +405,7 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
     // Set the chat status
     ui->chatStatus->setText(chatItem->status());
 
-    // Clear the chat area and load messages for this user
+    // Clear the chat area
     ui->messageDisplay->clear();
 
     // Add system message indicating private chat
@@ -412,6 +420,11 @@ void MainWindow::onUserItemClicked(QListWidgetItem *item)
 
     // Reactivar señales
     ui->userListWidget->blockSignals(false);
+    
+    // Asegurarse de que el campo de mensajes y el botón están habilitados
+    ui->messageInput->setEnabled(true);
+    ui->sendButton->setEnabled(true);
+    ui->messageInput->setFocus();
 }
 
 void MainWindow::clearMessageDisplay()
@@ -419,7 +432,6 @@ void MainWindow::clearMessageDisplay()
     ui->messageDisplay->clear();
     qDebug() << "MainWindow: Mensajes limpiados";
 }
-
 void MainWindow::onBroadcastItemClicked(QListWidgetItem *item)
 {
     if (!item) return;
@@ -784,7 +796,7 @@ void MainWindow::updateUserAvatar()
 
 void MainWindow::getChatHistory(const QString &chatName)
 {
-    qDebug() << "Solicitando historial de chat para:" << chatName;
+    qDebug() << "DEBUG - Solicitando historial de chat para:" << chatName;
     
     if (!m_connected || !m_webSocketClient) {
         qDebug() << "No se puede obtener historial: no conectado o cliente no inicializado";
@@ -796,6 +808,9 @@ void MainWindow::getChatHistory(const QString &chatName)
         qDebug() << "Error: nombre de chat vacío";
         return;
     }
+    
+    // Mostrar mensaje de carga
+    addSystemMessage("Cargando historial de mensajes...");
     
     // Clear current messages
     ui->messageDisplay->clear();

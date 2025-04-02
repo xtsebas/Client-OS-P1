@@ -202,7 +202,7 @@ void WebSocketClient::handleError(QDataStream& in) {
 }
 
 void WebSocketClient::sendMessage(const QString& recipient, const QString& message) {
-    qDebug() << "WebSocketClient: enviando mensaje a" << recipient << "- Mensaje:" << message;
+    qDebug() << "DEBUG - WebSocketClient::sendMessage: Enviando a" << recipient << "- Mensaje:" << message.left(30);
 
     // Validación básica
     if (recipient.isEmpty()) {
@@ -237,7 +237,15 @@ void WebSocketClient::sendMessage(const QString& recipient, const QString& messa
         out.writeRawData(message.toUtf8().data(), message.size());
 
         // Enviar el mensaje binario
-        qDebug() << "WebSocketClient: enviando paquete de" << payload.size() << "bytes";
+        qDebug() << "DEBUG - WebSocketClient: enviando paquete de" << payload.size() << "bytes";
+        
+        // Convertir el payload a hexadecimal para depuración
+        QString hexDump;
+        for (char byte : payload) {
+            hexDump += QString("%1 ").arg((quint8)byte, 2, 16, QLatin1Char('0'));
+        }
+        qDebug() << "DEBUG - Payload hexadecimal:" << hexDump;
+        
         socket.sendBinaryMessage(payload);
     } catch (const std::exception& e) {
         qDebug() << "Excepción en WebSocketClient::sendMessage:" << e.what();
