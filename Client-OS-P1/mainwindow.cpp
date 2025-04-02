@@ -114,50 +114,65 @@ void MainWindow::onConnectTriggered()
     }
 
     ConnectionDialog dialog(this);
-    // Pre-populate with known working server address and port
     dialog.setServerAddress("18.224.60.241");
     dialog.setServerPort(18080);
 
-    if (dialog.exec() == QDialog::Accepted) {
-        m_currentUsername = dialog.username();
+    if (dialog.exec() != QDialog::Accepted) return;
 
-        // Create WebSocket connection URL
-        QUrl url;
-        url.setScheme("ws");
-        url.setHost(dialog.server());
-        url.setPort(dialog.port());
-        url.setPath("/");
+    m_currentUsername = dialog.username();
+    QString host = dialog.server();
+    int port = dialog.port();
 
-        // Update status bar
-        ui->statusbar->showMessage("Connecting to server...");
-
-        // Initialize WebSocketClient
-        m_webSocketClient = new WebSocketClient(url, m_currentUsername, this);
-        
-        // Connect WebSocketClient signals to MainWindow slots
-        connect(m_webSocketClient, &WebSocketClient::connected, this, &MainWindow::onWebSocketConnected);
-        connect(m_webSocketClient, &WebSocketClient::disconnected, this, &MainWindow::onWebSocketDisconnected);
-        // Nueva conexión para la señal con bandera
-        connect(m_webSocketClient, &WebSocketClient::messageReceivedWithFlag, 
-                this, &MainWindow::onMessageReceivedWithFlag);
-        // Mantener la conexión existente para compatibilidad
-        connect(m_webSocketClient, &WebSocketClient::messageReceived, 
-                this, &MainWindow::onMessageReceived);
-        connect(m_webSocketClient, &WebSocketClient::userListReceived, this, &MainWindow::onUserListReceived);
-        connect(m_webSocketClient, &WebSocketClient::userStatusReceived, this, &MainWindow::onUserStatusReceived);
-        connect(m_webSocketClient, &WebSocketClient::connectionRejected, this, [=]() {
-            QMessageBox::warning(this, "Connection Rejected", 
-                                "The username is already in use. Please try again with a different username.");
-            m_webSocketClient->deleteLater();
-            m_webSocketClient = nullptr;
-            onDisconnectTriggered();
-        });
-
-        // Verify HTTP server
-        QUrl httpUrl("http://" + dialog.server() + ":" + QString::number(dialog.port()) + "/");
-        QNetworkRequest request(httpUrl);
-        m_networkManager->get(request);
+    if (m_currentUsername.trimmed().isEmpty()) {
+        QMessageBox::warning(this, "Input Error", "Username cannot be empty.");
+        return;
     }
+
+    // Paso 1: Validación HTTP previa
+    ui->statusbar->showMessage("Verificando usuario...");
+    QUrl httpUrl(QString("http://%1:%2/?name=%3").arg(host).arg(port).arg(m_currentUsername));
+    QNetworkRequest request(httpUrl);
+
+    QNetworkReply* reply = m_networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [=]() {
+        int code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        reply->deleteLater();
+
+        if (code == 400) {
+            QMessageBox::warning(this, "Usuario no válido", "El nombre ya está en uso o es inválido.");
+            ui->statusbar->showMessage("Error: nombre ya en uso.");
+        }
+        else if (code >= 200 && code < 300) {
+            qDebug() << "✅ Verificación HTTP aceptada (código" << code << ") para usuario:" << m_currentUsername;
+            addSystemMessage("✅ Usuario verificado correctamente. Conectando WebSocket...");
+
+            ui->statusbar->showMessage("Conectando a WebSocket...");
+
+            QUrl wsUrl(QString("ws://%1:%2/?name=%3").arg(host).arg(port).arg(m_currentUsername));
+
+            // Crear cliente WebSocket
+            m_webSocketClient = new WebSocketClient(wsUrl, m_currentUsername, this);
+
+            connect(m_webSocketClient, &WebSocketClient::connected, this, &MainWindow::onWebSocketConnected);
+            connect(m_webSocketClient, &WebSocketClient::disconnected, this, &MainWindow::onWebSocketDisconnected);
+            connect(m_webSocketClient, &WebSocketClient::messageReceived, this, &MainWindow::onMessageReceived);
+            connect(m_webSocketClient, &WebSocketClient::messageReceivedWithFlag, this, &MainWindow::onMessageReceivedWithFlag);
+            connect(m_webSocketClient, &WebSocketClient::userListReceived, this, &MainWindow::onUserListReceived);
+            connect(m_webSocketClient, &WebSocketClient::userStatusReceived, this, &MainWindow::onUserStatusReceived);
+            connect(m_webSocketClient, &WebSocketClient::connectionRejected, this, [=]() {
+                QMessageBox::warning(this, "Conexión rechazada", "El nombre de usuario ya está en uso.");
+                m_webSocketClient->deleteLater();
+                m_webSocketClient = nullptr;
+                onDisconnectTriggered();
+            });
+
+        }
+        else {
+            QMessageBox::critical(this, "Error HTTP", "Código: " + QString::number(code));
+            ui->statusbar->showMessage("Error HTTP: " + QString::number(code));
+        }
+    });
 }
 
 void MainWindow::onDisconnectTriggered()
