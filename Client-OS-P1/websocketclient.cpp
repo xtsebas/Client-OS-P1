@@ -95,14 +95,35 @@ void WebSocketClient::onBinaryMessageReceived(const QByteArray& message) {
         quint8 newStatus;
         in >> newStatus;
 
-        if (newStatus == 0x00) {
-            emit messageReceived("~", "🚪 " + username + " se ha desconectado.");
-        } else if (newStatus == 0x01) {
-            emit messageReceived("~", "✅ " + username + " está activo.");
-        } else if (newStatus == 0x02) {
-            emit messageReceived("~", "🔴 " + username + " está ocupado.");
-        } else if (newStatus == 0x03) {
-            emit messageReceived("~", "💤 " + username + " está inactivo.");
+        static QHash<QString, quint8> lastStatus;
+        static QHash<QString, QDateTime> lastNotificationTime;
+
+        // Verificamos si ya recibimos esta misma notificación hace menos de 1 segundo
+        if (lastStatus.contains(username) &&
+            lastStatus[username] == newStatus &&
+            lastNotificationTime.contains(username) &&
+            lastNotificationTime[username].msecsTo(QDateTime::currentDateTime()) < 1000) {
+            break; // ignoramos duplicado
+        }
+
+        lastStatus[username] = newStatus;
+        lastNotificationTime[username] = QDateTime::currentDateTime();
+
+        QString message;
+        switch (newStatus) {
+        case 0x00: message = "🚪 " + username + " se ha desconectado."; break;
+        case 0x01: message = "✅ " + username + " está activo."; break;
+        case 0x02: message = "🔴 " + username + " está ocupado."; break;
+        case 0x03: message = "💤 " + username + " está inactivo."; break;
+        default: break;
+        }
+
+        emit messageReceived("~", message);
+
+        if (username == this->username) {
+            emit userStatusReceived(newStatus);
+        } else {
+            emit userStatusChanged(username, newStatus);
         }
 
         QByteArray payload;

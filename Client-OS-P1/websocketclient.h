@@ -26,6 +26,7 @@ signals:
     void statusChanged(quint8 newStatus);
     void connectionRejected();
     void clearMessages();  // Nueva señal
+    void userStatusChanged(const QString& username, quint8 newStatus); //signal for status
 
 private slots:
     void onConnected();

@@ -53,6 +53,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->infoButton, &QPushButton::clicked, this, &MainWindow::onInfoButtonClicked);
     connect(ui->closeInfoButton, &QPushButton::clicked, this, &MainWindow::onCloseInfoButtonClicked);
     connect(ui->refreshInfoButton, &QPushButton::clicked, this, &MainWindow::onRefreshInfoButtonClicked);
+    connect(m_webSocketClient, &WebSocketClient::userStatusChanged,
+            this, &MainWindow::onExternalUserStatusChanged);
 
     // Create a shortcut for sending messages with Enter
     QShortcut *sendShortcut = new QShortcut(QKeySequence(Qt::Key_Return), this);
@@ -932,6 +934,49 @@ void MainWindow::updateUserLastMessage(const QString &username, const QString &m
         }
     }
 }
+
+void MainWindow::onExternalUserStatusChanged(const QString& username, quint8 newStatus)
+{
+    qDebug() << "Cambio de estado detectado: " << username << " -> " << newStatus;
+
+    QString newStatusText;
+    switch (newStatus) {
+    case 0x01: newStatusText = "ACTIVO"; break;
+    case 0x02: newStatusText = "OCUPADO"; break;
+    case 0x03: newStatusText = "INACTIVO"; break;
+    default: newStatusText = "DESCONOCIDO"; break;
+    }
+
+    for (int i = 0; i < ui->userListWidget->count(); ++i) {
+        QListWidgetItem *item = ui->userListWidget->item(i);
+        UserChatItem *chatItem = qobject_cast<UserChatItem*>(ui->userListWidget->itemWidget(item));
+
+        if (chatItem && chatItem->username() == username) {
+            chatItem->setStatus(newStatusText);
+            break;
+        }
+    }
+
+    // Si el sidebar está mostrando a ese usuario, actualiza también ahí
+    if (ui->userInfoSidebar->isVisible() && ui->userInfoName->text() == username) {
+        ui->userInfoStatusValue->setText(newStatusText);
+
+        if (newStatusText == "ACTIVO") {
+            ui->userInfoStatus->setText("Active");
+            ui->userInfoStatus->setStyleSheet("color: #2ecc71;");
+        } else if (newStatusText == "OCUPADO") {
+            ui->userInfoStatus->setText("Busy");
+            ui->userInfoStatus->setStyleSheet("color: #e74c3c;");
+        } else if (newStatusText == "INACTIVO") {
+            ui->userInfoStatus->setText("Inactive");
+            ui->userInfoStatus->setStyleSheet("color: #f1c40f;");
+        } else {
+            ui->userInfoStatus->setText(newStatusText);
+            ui->userInfoStatus->setStyleSheet("color: #95a5a6;");
+        }
+    }
+}
+
 
 void MainWindow::loadDirectChatHistory(const QString &username)
 {

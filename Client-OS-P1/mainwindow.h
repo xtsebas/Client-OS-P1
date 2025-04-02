@@ -61,7 +61,8 @@ private slots:
     void onUserItemClicked(QListWidgetItem *item);
     void onBroadcastItemClicked(QListWidgetItem *item);
     void onStatusChanged(int index);
-    
+    void onExternalUserStatusChanged(const QString &username, quint8 newStatus);
+
     // Info panel
     void onInfoButtonClicked();
     void onCloseInfoButtonClicked();
